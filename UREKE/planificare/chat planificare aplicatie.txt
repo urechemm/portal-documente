@@ -1,0 +1,219 @@
+Construieste aplicatia Portal-Documente, avand urmatoarele cerinte:
+
+A) Detalii functionale
+Porneste  de la ideea că problema nu este neapărat unde se stochează fișierele, ci experiența clientului când răspunde la cerințele de audit. Din acest motiv, prima variantă a aplicației ar putea păstra SharePoint în backend și să ofere clientului o interfață mult mai simplă.
+1. Conceptul aplicației
+Aplicația ar funcționa ca un portal PBC – Prepared by Client.
+În loc să primească o listă Excel/PDF cu cerințe și să caute apoi folderele potrivite în SharePoint, clientul ar vedea ceva de genul:
+#	Cerință auditor	Perioadă	Status	Documente	Acțiune
+01	Balanța de verificare finală	31.12.2026	Lipsă	—	Încarcă
+02	Registrul mijloacelor fixe	31.12.2026	Primit	1	Vezi
+03	Extrase bancare	Decembrie 2026	Clarificare	3	Răspunde
+04	Contracte noi semnificative	2026	Nu se aplică	—	Detalii
+
+
+Clientul nu ar trebui să se gândească deloc în ce folder trebuie pus documentul. Cerința determină automat locul de stocare.
+2. Elementul pe care l-ai menționat: descrierea documentului
+Aș face Descrierea documentului un câmp obligatoriu la fiecare upload.
+De exemplu:
+Fișier: balanta_dec_2026.xlsx
+Descriere introdusă de client:
+„Balanța finală la 31.12.2026, după înregistrarea ajustărilor de inventariere.”
+Asta este mult mai valoros pentru auditor decât simplul nume al fișierului.
+La fiecare document aș păstra cel puțin următoarele metadate:
+Câmp	Exemplu
+Cerință	Balanță de verificare
+Fișier	Balanta_decembrie.xlsx
+Descriere document	obligatoriu
+Entitate	ABC SRL
+Perioadă	31.12.2026
+Încărcat de	Ion Popescu
+Data încărcării	14.01.2027 10:43
+Versiune	1
+Status document	Nou / Acceptat / De înlocuit
+Comentariu auditor	„Vă rugăm transmiteți versiunea după ajustări.”
+
+
+Aș evita descrierile generice precum „document solicitat”. Aplicația poate chiar afișa în câmp un exemplu adaptat cerinței.
+3. Fluxul ideal
+Fluxul ar trebui să fie foarte simplu pentru client:
+Auditor → Cerință → Client → Document → Auditor → Clarificare/Acceptare
+Auditorul creează proiectul de audit și importă lista de cerințe. Clientul primește acces. Pentru fiecare cerință vede explicația, eventual exemple de documente acceptate, termenul și persoana responsabilă.
+Când apasă „Încarcă document”, apare o fereastră foarte simplă:
+Cerință: Balanța de verificare finală  
+Fișier: [Drag & drop]  
+Descrierea documentului*
+„Descrieți ce conține fișierul și perioada la care se referă.”  
+Perioadă: [31.12.2026]  
+[Trimite auditorului]
+
+După upload, cerința trece automat din Lipsă în Primit.
+Auditorul poate apoi marca documentul drept Acceptat, Necesită clarificări sau Necesită înlocuire.
+4. Aș elimina conceptul de „foldere” din perspectiva clientului
+Aceasta cred că ar fi una dintre cele mai importante decizii de design.
+Clientul nu ar trebui să vadă:
+SharePoint > Audit 2026 > 01 Preliminary > 04 Fixed assets > Additions
+El ar trebui să vadă:
+„04.03 – Lista achizițiilor de mijloace fixe din anul 2026”
+și butonul:
+Încarcă document
+În backend, aplicația poate salva automat documentul în structura:
+Client / Audit 2026 / Fixed Assets / Additions
+Deci structura internă rămâne utilă auditorului, dar devine invizibilă clientului.
+5. Cerințele ar trebui să fie obiecte, nu simple rânduri într-un Excel
+Pentru fiecare cerință aș avea aproximativ următoarea structură:
+Câmp	Exemplu
+Cod	FA-03
+Arie audit	Imobilizări
+Cerință	Registrul mijloacelor fixe
+Descriere	Registrul complet la 31.12.2026
+Instrucțiuni	Includeți cost, amortizare cumulată etc.
+Entitate	ABC SRL
+Perioadă	FY2026
+Responsabil client	Maria Ionescu
+Auditor responsabil	Andrei
+Deadline	15.01.2027
+Prioritate	Normală
+Status	Primit
+Nr. documente	2
+
+
+Foarte important: aceeași aplicație poate fi reutilizată anual prin copierea listei de cerințe din auditul anterior.
+6. Statusurile
+Aș păstra statusurile foarte clare. Prea multe statusuri vor încurca clientul.
+O variantă suficientă pentru început:
+Nesolicitat → Solicitat → Primit → În revizuire → Clarificare necesară → Complet
+Separat, clientul ar putea avea și:
+Nu se aplică
+dar ar trebui să introducă obligatoriu o explicație:
+„Nu au existat achiziții de terenuri în cursul exercițiului.”
+
+Asta ar fi salvată în audit trail.
+7. Conversația trebuie legată de cerință
+Aș evita emailurile de forma:
+„Referitor la documentul trimis ieri...”
+
+În aplicație, fiecare cerință ar avea propriul thread:
+Auditor:
+„Fișierul conține situația până la noiembrie. Ne puteți transmite și decembrie?”
+Client:
+„Da. Am încărcat versiunea actualizată.”
+Document nou:
+Fixed_assets_2026_FINAL.xlsx
+Descriere:
+„Registrul complet pentru ianuarie-decembrie 2026.”
+Astfel, peste 6 luni există o urmă foarte clară a comunicării.
+8. Dashboard pentru client
+Pagina de start ar putea arăta aproximativ așa:
+Audit statutar ABC SRL – 31 decembrie 2026
+Situație	Număr
+Cerințe totale	84
+Completate	52
+În revizuire	9
+Clarificări solicitate	6
+De transmis	17
+
+
+Sub acestea:
+Acțiuni necesare din partea dvs.
+iar clientul vede direct cele 23 de elemente asupra cărora trebuie să facă ceva.
+Nu trebuie să caute prin 84 de cerințe.
+9. Dashboard pentru echipa de audit
+Pentru auditor aș avea o vedere diferită:
+Cerință	Client	Document primit	Data	Auditor	Status
+Balanță	ABC	Da	12 Ian	AM	În revizuire
+Aging clienți	ABC	Da	13 Ian	CD	Clarificare
+Contracte	ABC	Nu	—	AM	Restant
+
+
+Foarte utilă ar fi și vizualizarea:
+„Ce a încărcat clientul de la ultima mea autentificare?”
+În perioadele de busy season, aceasta poate economisi foarte mult timp.
+10. Notificările
+Nu aș trimite email pentru fiecare fișier încărcat. Ar deveni rapid zgomot.
+Mai util ar fi un digest:
+ABC SRL – activitate astăzi
+12 documente noi
+3 răspunsuri la clarificări
+2 cerințe marcate „Nu se aplică”
+
+În schimb, notificările punctuale pot fi folosite pentru comentarii sau cerințe urgente.
+11. Funcții foarte utile pentru o versiune ulterioară
+După ce funcționează bine upload-ul de bază, aplicația poate deveni mult mai interesantă:
+- drag & drop multiplu și asocierea mai multor fișiere aceleiași cerințe;
+- versionare automată;
+- detectarea fișierelor duplicate;
+- preview PDF/Excel/Word;
+- căutare în toate documentele;
+- export al listei PBC în Excel;
+- reminder automat pentru cerințe restante;
+- reutilizarea listei de cerințe din anul anterior;
+- șabloane de cerințe pe arii de audit;
+- posibilitatea ca managerul financiar să repartizeze cerințele către colegi;
+- istoric complet al uploadurilor și modificărilor;
+- blocarea ștergerii documentelor după ce au fost analizate;
+- eventual AI pentru clasificare și pentru propunerea automată a descrierii documentului.
+La AI însă aș păstra principiul: clientul confirmă descrierea înainte ca documentul să fie transmis.
+12. Un feature pe care l-aș introduce din prima versiune
+Pe lângă Descriere document, aș adăuga:
+„Ce reprezintă acest document?”
+Nu doar filename-ul.
+De exemplu, după upload-ul:
+export122324.xlsx
+aplicația ar cere:
+Descriere document*
+Aging clienți la 31.12.2026, în RON, inclusiv facturile neîncasate ulterior.
+
+În audit, aceste metadate devin extrem de utile mai târziu.
+13. Din punct de vedere tehnic, nu aș renunța imediat la SharePoint
+Aș lua serios în calcul următoarea arhitectură:
+Client
+↓  
+Portal web simplu
+↓  
+API / application layer
+↓  
+SharePoint / Microsoft 365 pentru documente
+plus
+bază de date pentru cerințe, statusuri, comentarii și audit trail
+Avantajul este că nu trebuie să reconstruiești din prima zi partea dificilă de document management, backup, versionare și permisiuni. Construiești în principal experiența utilizatorului peste infrastructura pe care deja o ai.
+Mai târziu, storage-ul poate fi schimbat fără să modifici experiența clientului.
+14. Securitatea este critică
+Fiind documente de audit, aș considera obligatorii autentificarea MFA, segregarea strictă între clienți, jurnalizarea accesului și downloadurilor, criptarea, politici de retenție, posibilitatea de revocare imediată a accesului, scanarea fișierelor încărcate și un audit trail care să nu poată fi modificat de client.
+De asemenea, trebuie proiectată foarte atent situația în care aceeași persoană de la client lucrează cu mai multe entități sau când un CFO are acces la mai multe companii dintr-un grup.
+15. Ce aș pune în MVP
+Nu aș încerca să construiesc de la început „platforma completă de audit”.
+Pentru MVP, aș limita produsul la aproximativ 10 funcții: creare engagement, import listă de cerințe, portal client, responsabil per cerință, upload document, descriere obligatorie a documentului, comentarii auditor-client, statusuri, notificări și dashboard de progres.
+Dacă aceste lucruri sunt foarte bine făcute, aplicația rezolvă deja problema principală.
+Cum văd produsul
+În esență, nu este o aplicație de „file sharing”.
+Este o aplicație de gestionare a informațiilor solicitate în cadrul auditului.
+Diferența este importantă.
+Obiectul central nu ar trebui să fie fișierul sau folderul, ci:
+CERINȚA DE AUDIT
+iar sub ea stau:
+documente + descrieri + versiuni + comentarii + responsabil + status + istoric.
+
+B) Detalii tehnice:
+Back-End: 
+- stocare documente: celentis.sharepoint.com. Logare cu userul: mihai.ureche@celentis.ro, imi ceri tu cand sa ma autentific, folosind contul acesta
+- database: Supabase. 
+DB URL:https://iekirbhyctllpvqnvnzk.supabase.co
+Global Administrator: ​urechemm@yahoo.com​ (user deja creat in DB)
+Publishable key: sb_publishable_jWmQxdOgRfFyIGOSF8njCg_IKIxWwqP
+
+Toate adresele si conturile de mai sus, lasa-le libere in Settings (doar Administratorul vede), nu le hardcoda in cod.Pentru a putea fi modificate ulterior de catre administratorul aplicatiei.
+
+Design si capabilitate multi-tenant: 
+ - foloseste design-ul aplicatiei Confirmari-Sold. Gasesti detalii in chatul "Construiește aplicația Confirmări-Sold.
+În acea conversație am discutat despre aceste lucuri.
+Foloseste design-ul si work and feel-ul aplicatiei creat acolo (logouri, favicon,aspectul interfetei,sidebar pentru enlarge spatiu lucru, headere cu sortare,etc).
+Foloseste capabilitatile multi-tenant create acolo
+Folosește contextul disponibil acolo și recuperează doar informația referitoare la:
+ - design/work and feel . Data te ajuta am si acest fisier: C:\Users\Mihai\.codex\My Projects\Confirmari sold\src\style.css
+ - capabilitatile multi-tenant.
+Dacă nu poți identifica sigur informația, spune-mi asta și nu presupune.
+
+Build:
+Construieste de asemenea un fisier Build-Documente.ps1, ca sa builduiesc eu manual aplicatia.Voi uploada build-ul in domeniul meu.
+Modeul este : C:\Users\Mihai\.codex\My Projects\Confirmari sold\Build-Celentis.ps1

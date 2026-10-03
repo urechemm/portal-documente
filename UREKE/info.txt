@@ -1,0 +1,13 @@
+Supabase
+
+Portal-Documente project url: https://iekirbhyctllpvqnvnzk.supabase.co
+pass: portal-documenteUMM1980!
+
+Publishable key: sb_publishable_jWmQxdOgRfFyIGOSF8njCg_IKIxWwqP
+
+Portal-Documente Database url: 
+https://hhtnxrncdasfszurwgma.supabase.co
+
+primul DB user - administrator:
+urechemm@yahoo.com
+supabaseUMM1980!
