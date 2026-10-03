@@ -1,0 +1,5 @@
+{
+  "supabaseUrl": "https://PROJECT.supabase.co",
+  "supabasePublishableKey": "sb_publishable_REPLACE_ME",
+  "environment": "production"
+}

@@ -74,3 +74,8 @@ grant select on public.audit_events to authenticated;
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path=public as $$
 begin insert into public.profiles(id,name,email) values(new.id,coalesce(new.raw_user_meta_data->>'name',''),coalesce(new.email,'')) on conflict(id) do update set email=excluded.email; return new; end$$;
 create trigger auth_user_profile after insert or update of email on auth.users for each row execute function public.handle_new_user();
+
+-- Users created before this migration also receive a profile.
+insert into public.profiles(id,name,email)
+select id,coalesce(raw_user_meta_data->>'name',''),coalesce(email,'') from auth.users
+on conflict(id) do update set email=excluded.email;

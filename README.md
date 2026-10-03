@@ -11,7 +11,7 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-Aplicația pornește în mod demonstrativ local. Rolul poate fi schimbat din colțul dreapta sus între Administrator, Auditor și Client.
+Fără `public/runtime-config.json`, aplicația pornește în mod demonstrativ local. Build-ul de producție generează temporar configurația publică Supabase și pornește autentificarea live.
 
 ## Build manual
 
@@ -19,7 +19,7 @@ Aplicația pornește în mod demonstrativ local. Rolul poate fi schimbat din col
 .\Build-Documente.ps1
 ```
 
-Scriptul creează folderul `portal-documente-upload` și arhiva `Portal-Documente.zip`. Configurația Supabase, administratorul global și conexiunea SharePoint nu sunt hardcodate; câmpurile pornesc goale în `Setări > Conexiuni` și sunt vizibile numai rolului Administrator.
+Scriptul solicită URL-ul și cheia publică Supabase, apoi creează folderul `documente-upload` și arhiva `documente-upload.zip`. Configurația nu este hardcodată în surse. Instrucțiunile complete sunt în `ACTIVARE-LIVE.md`.
 
 ## Backend
 

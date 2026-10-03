@@ -27,7 +27,7 @@ function event(state: State, requestId: string | null, action: string, details: 
 export function mutateState(state: State, mutation: (draft: State) => void): State {
   const next = structuredClone(state);
   mutation(next);
-  writeState(next);
+  if (sessionStorage.getItem("portal-runtime-mode") !== "live") writeState(next);
   return next;
 }
 

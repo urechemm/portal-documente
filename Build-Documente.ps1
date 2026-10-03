@@ -1,4 +1,8 @@
-param([string]$OutputDirectory = 'documente-upload')
+param(
+    [string]$OutputDirectory = 'documente-upload',
+    [string]$SupabaseUrl = '',
+    [string]$SupabasePublishableKey = ''
+)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 $localNode = Join-Path $PSScriptRoot 'tools\node-v22.22.0-win-x64'
@@ -12,9 +16,30 @@ if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'node_modules'))) {
     if ($LASTEXITCODE -ne 0) { throw 'Instalarea dependențelor a eșuat.' }
 
 }
-Write-Host 'Construiesc Portal Documente...'
-& npm.cmd run build -- --outDir $OutputDirectory --emptyOutDir
-if ($LASTEXITCODE -ne 0) { throw 'Build-ul a eșuat.' }
-    Compress-Archive -Path "$PSScriptRoot\$OutputDirectory\*" -DestinationPath "$PSScriptRoot\$OutputDirectory\$OutputDirectory.zip" -Force
+if (-not $SupabaseUrl) { $SupabaseUrl = Read-Host 'Supabase Project URL' }
+if (-not $SupabasePublishableKey) { $SupabasePublishableKey = Read-Host 'Supabase publishable key' }
+if (-not $SupabaseUrl -or -not $SupabasePublishableKey) { throw 'Configurația Supabase este obligatorie pentru build-ul LIVE.' }
+
+$runtimeConfig = Join-Path $PSScriptRoot 'public\runtime-config.json'
+$previousRuntimeConfig = if (Test-Path -LiteralPath $runtimeConfig) { Get-Content -Raw -LiteralPath $runtimeConfig } else { $null }
+try {
+    @{
+        supabaseUrl = $SupabaseUrl.TrimEnd('/')
+        supabasePublishableKey = $SupabasePublishableKey
+        environment = 'production'
+    } | ConvertTo-Json | Set-Content -LiteralPath $runtimeConfig -Encoding UTF8
+    Write-Host 'Construiesc Portal Documente LIVE...'
+    & npm.cmd run build -- --outDir $OutputDirectory --emptyOutDir
+    if ($LASTEXITCODE -ne 0) { throw 'Build-ul a eșuat.' }
+    $zipPath = Join-Path $PSScriptRoot "$OutputDirectory.zip"
+    Compress-Archive -Path "$PSScriptRoot\$OutputDirectory\*" -DestinationPath $zipPath -Force
     Write-Host "Folder pentru Celentis cPanel: $PSScriptRoot\$OutputDirectory"
-    Write-Host "Arhiva ZIP: $PSScriptRoot\$OutputDirectory.zip"
+    Write-Host "Arhiva ZIP: $zipPath"
+
+    	Write-Host "git add -A"
+	
+	git add -A
+} finally {
+    if ($null -ne $previousRuntimeConfig) { Set-Content -LiteralPath $runtimeConfig -Value $previousRuntimeConfig -Encoding UTF8 }
+    elseif (Test-Path -LiteralPath $runtimeConfig) { Remove-Item -LiteralPath $runtimeConfig -Force }
+}

@@ -100,6 +100,8 @@ export interface Settings {
   global_admin_email: string;
   sharepoint_host: string;
   sharepoint_user: string;
+  sharepoint_site_path: string;
+  sharepoint_library: string;
   digest_hour: string;
   retention_years: number;
 }
@@ -214,7 +216,7 @@ export function createDemo(): State {
       { id: "evt-2", audit_firm_id: firm, request_id: "req-3", actor_id: auditor, action: "CLARIFICATION_REQUESTED", details: "A fost solicitat extrasul pentru contul în EUR.", created_at: "2027-01-14T09:10:00Z" },
       { id: "evt-3", audit_firm_id: firm, request_id: "req-5", actor_id: client, action: "DOCUMENT_UPLOADED", details: "Aging_clienti_2026.xlsx · versiunea 1", created_at: "2027-01-15T08:15:00Z" },
     ],
-    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", sharepoint_host: "", sharepoint_user: "", digest_hour: "17:00", retention_years: 7 },
+    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente", digest_hour: "17:00", retention_years: 7 },
     current_firm_id: firm,
     current_user_id: admin,
     is_global_admin: true,
