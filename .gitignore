@@ -4,4 +4,4 @@ tools/
 test-results/
 playwright-report/
 *.tsbuildinfo
-UREKE/
+UREKE/*
