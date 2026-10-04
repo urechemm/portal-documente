@@ -53,11 +53,29 @@ Activated
 
 ======================================================================================================
 PowerShell
-npx supabase link --project-ref iekirbhyctllpvqnvnzk
-npx supabase secrets set MS_TENANT_ID="26f35d6d-38de-4b9a-8159-dbb07cd8628f" MS_CLIENT_ID="0d487919-1b9a-407b-b545-58773e3bd2c9" MS_CLIENT_SECRET="a8e6afa2-4463-4078-b71b-afdfc29e2c5e" APP_ORIGIN="https://documente.celentis.ro"
-npx supabase functions deploy sharepoint-upload 
+npx.cmd supabase link --project-ref iekirbhyctllpvqnvnzk
+npx.cmd supabase secrets set MS_TENANT_ID="26f35d6d-38de-4b9a-8159-dbb07cd8628f" MS_CLIENT_ID="0d487919-1b9a-407b-b545-58773e3bd2c9" MS_CLIENT_SECRET="a8e6afa2-4463-4078-b71b-afdfc29e2c5e" APP_ORIGIN="https://documente.celentis.ro"
+npx.cmd supabase functions deploy sharepoint-upload 
+
+npx.cmd supabase link --project-ref iekirbhyctllpvqnvnzk
+npx.cmd supabase functions deploy sharepoint-upload
+
+npx.cmd supabase secrets list
+
+   APP_ORIGIN                | d1f173a3dd179d5302fa74126423ef2b424f52561ced1c983845656c14e74890 
+   MS_CLIENT_ID              | bfbc82fb857270355c5e40db75edc2df46e9a0cd1b1060fe1a6b4d8fcb72c8db 
+   MS_CLIENT_SECRET          | cb89eccbab41f9b84a29aab47ce4de704e0dee5da4bdae63ed69078b5acb57a1 
+   MS_TENANT_ID              | cf91e2f9f352194870f35b38b0cf065d14cbf3445e5326e4c967db089749585c 
+   SUPABASE_ANON_KEY         | 0f30ff4aaa4213e17f467dd2a32c64a05282177fa1b9f553a9c4cd6acfe45f3e 
+   SUPABASE_DB_URL           | 0fc927961c7f2ece045eff3c0c8cd538efa228e00b37d3172624d91b5b51569d 
+   SUPABASE_JWKS             | d40d2cc2ecc81cfbbb4f5dce3f1a8ed27e0daa927c023c4c305c62d420e42a12 
+   SUPABASE_PUBLISHABLE_KEYS | a08c2e217b421f8178be438f01d45272472d76839d7f14829590a360c5734177 
+   SUPABASE_SECRET_KEYS      | 25f47608b0c6738e10725e7f1062454c455ce5b781477b87cce8849cbcb1cc3e 
+   SUPABASE_SERVICE_ROLE_KEY | 6f7b7a487586cf4550992a691e552c877938d90e08d505a37406bdfce414bfcc 
+   SUPABASE_URL              | d83fe772564d55fe7cfe37d7bb6ab737ab3d3ca4d7261e6757cbb6c8b37f5758 
 ======================================================================================================
-Settings
+Settings - sharepoint
 SharePoint host:          celentis.sharepoint.com
 Cale site SharePoint:     root
 Bibliotecă documente:     Portal-Documente
+

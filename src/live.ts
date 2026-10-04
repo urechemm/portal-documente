@@ -32,6 +32,24 @@ function fail(message: string, error?: { message?: string } | null): never {
   throw new Error(error?.message ? `${message}: ${error.message}` : message);
 }
 
+async function edgeFunctionError(error: unknown, fallback: string): Promise<string> {
+  const candidate = error as { message?: string; context?: Response } | null;
+  const response = candidate?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const payload = await response.clone().json() as { error?: string; message?: string };
+      if (payload.error) return payload.error;
+      if (payload.message) return payload.message;
+    } catch {
+      try {
+        const body = await response.clone().text();
+        if (body.trim()) return body.trim().slice(0, 500);
+      } catch { /* fall back to the SDK error below */ }
+    }
+  }
+  return candidate?.message || fallback;
+}
+
 export async function loadLiveState(client: SupabaseClient, requestedFirm?: string | null): Promise<State> {
   const { data: userData, error: userError } = await client.auth.getUser();
   const user = userData.user;
@@ -105,7 +123,29 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
   await upsert("entities", changedRows(before.entities, after.entities));
   await upsert("engagements", changedRows(before.engagements, after.engagements));
   await upsert("engagement_users", after.engagement_users.filter((item) => !before.engagement_users.some((old) => old.engagement_id === item.engagement_id && old.user_id === item.user_id)));
-  await upsert("pbc_requests", changedRows(before.requests, after.requests));
+  // New requests must not use ON CONFLICT: its SELECT checks can invoke
+  // can_access_request(id) before the new request exists in the database.
+  const existingRequestIds = new Set(before.requests.map((row) => row.id));
+  const requestChanges = changedRows(before.requests, after.requests).map((row) => {
+    const engagement = after.engagements.find((item) => item.id === row.engagement_id);
+    if (!engagement || engagement.audit_firm_id !== after.current_firm_id)
+      throw new Error("Misiunea cerinței nu aparține firmei de audit selectate.");
+    if (!row.client_owner_id || !after.memberships.some((item) =>
+      item.audit_firm_id === engagement.audit_firm_id && item.user_id === row.client_owner_id && item.active && item.role === "client"))
+      throw new Error("Selectați un Client activ din firma de audit a misiunii.");
+    return { ...row, audit_firm_id: engagement.audit_firm_id };
+  });
+  const newRequests = requestChanges.filter((row) => !existingRequestIds.has(row.id));
+  if (newRequests.length) {
+    const { error } = await client.from("pbc_requests").insert(newRequests);
+    if (error) fail("Crearea cerințelor a eșuat", error);
+  }
+  for (const row of requestChanges.filter((item) => existingRequestIds.has(item.id))) {
+    const { id, ...values } = row;
+    const { data, error } = await client.from("pbc_requests").update(values).eq("id", id).select("id");
+    if (error) fail("Actualizarea cerinței a eșuat", error);
+    if (!data?.length) fail("Cerința nu mai există sau nu aveți dreptul să o modificați.");
+  }
   await upsert("comments", changedRows(before.comments, after.comments));
   if (JSON.stringify(before.settings) !== JSON.stringify(after.settings)) {
     const { supabase_url: _url, supabase_publishable_key: _key, ...safeSettings } = after.settings;
@@ -122,7 +162,7 @@ export async function uploadLiveDocument(client: SupabaseClient, requestId: stri
   form.set("period", period);
   form.set("file", file);
   const { data, error } = await client.functions.invoke("sharepoint-upload", { body: form });
-  if (error) throw new Error(error.message || "Upload-ul SharePoint a eșuat.");
+  if (error) throw new Error(await edgeFunctionError(error, "Upload-ul SharePoint a eșuat."));
   if (data?.error) throw new Error(data.error);
 }
 

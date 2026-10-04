@@ -6,7 +6,7 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
-const required = (name: string) => { const value = Deno.env.get(name); if (!value) throw new Error(`Lipsește secretul ${name}.`); return value; };
+const required = (name: string) => { const value = Deno.env.get(name); if (!value) throw new Error(`Lipsește secretul ${name} din configurația Edge Function.`); return value; };
 const clean = (value: string) => value.replace(/[~#%&*{}\\:<>?/+|"\u0000-\u001f]/g, "-").replace(/\s+/g, " ").trim().slice(0, 120) || "Fără nume";
 const encodedPath = (parts: string[]) => parts.map((part) => encodeURIComponent(clean(part))).join("/");
 
@@ -16,7 +16,7 @@ async function graphToken() {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ client_id: required("MS_CLIENT_ID"), client_secret: required("MS_CLIENT_SECRET"), scope: "https://graph.microsoft.com/.default", grant_type: "client_credentials" }),
   });
-  if (!response.ok) throw new Error("Autentificarea aplicației Microsoft Graph a eșuat.");
+  if (!response.ok) throw new Error(`Autentificarea Microsoft Graph a eșuat (${response.status}): ${(await response.text()).slice(0, 300)}`);
   return (await response.json()).access_token as string;
 }
 
@@ -38,7 +38,7 @@ async function uploadFile(token: string, driveId: string, path: string, file: Fi
   for (let start = 0; start < file.size; start += chunkSize) {
     const end = Math.min(start + chunkSize, file.size);
     const response = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Length": String(end - start), "Content-Range": `bytes ${start}-${end - 1}/${file.size}` }, body: await file.slice(start, end).arrayBuffer() });
-    if (!response.ok && response.status !== 202) throw new Error(`Upload SharePoint întrerupt (${response.status}).`);
+    if (!response.ok && response.status !== 202) throw new Error(`Upload SharePoint întrerupt (${response.status}): ${(await response.text()).slice(0, 300)}`);
   }
 }
 
@@ -62,12 +62,12 @@ Deno.serve(async (request) => {
     if (file.size > 250 * 1024 * 1024) return json({ error: "Fișierul depășește limita de 250 MB." }, 413);
 
     const { data: pbc, error: pbcError } = await userClient.from("pbc_requests").select("id,code,title,audit_firm_id,engagement_id,engagements!inner(name,period,entity_id,entities!inner(name))").eq("id", requestId).single();
-    if (pbcError || !pbc) return json({ error: "Cerința nu există sau nu este accesibilă." }, 403);
+    if (pbcError || !pbc) return json({ error: "Cerința nu există, nu este asignată clientului curent sau sesiunea nu are MFA activ." }, 403);
     const { data: settings } = await adminClient.from("app_settings").select("data").eq("audit_firm_id", pbc.audit_firm_id).single();
     const host = String(settings?.data?.sharepoint_host ?? "");
     const sitePath = String(settings?.data?.sharepoint_site_path ?? "");
     const libraryName = String(settings?.data?.sharepoint_library ?? "Documente");
-    if (!host || !libraryName) return json({ error: "Conexiunea SharePoint nu este configurată complet." }, 503);
+    if (!host || !libraryName) return json({ error: "Conexiunea SharePoint nu este configurată complet în Setări → Conexiuni." }, 503);
 
     const token = await graphToken();
     const normalizedSitePath = sitePath.trim().replace(/^\/+|\/+$/g, "");
@@ -77,7 +77,7 @@ Deno.serve(async (request) => {
     const site = await (await graph(token, siteEndpoint)).json();
     const drives = await (await graph(token, `/sites/${site.id}/drives`)).json();
     const drive = drives.value.find((item: { name: string }) => item.name.toLowerCase() === libraryName.toLowerCase());
-    if (!drive) return json({ error: `Biblioteca SharePoint „${libraryName}” nu există.` }, 503);
+    if (!drive) return json({ error: `Biblioteca SharePoint „${libraryName}” nu a fost găsită pe site-ul configurat.` }, 503);
     const engagement = Array.isArray(pbc.engagements) ? pbc.engagements[0] : pbc.engagements;
     const entity = Array.isArray(engagement.entities) ? engagement.entities[0] : engagement.entities;
     const path = encodedPath([entity.name, engagement.name, `${pbc.code} - ${pbc.title}`]);
