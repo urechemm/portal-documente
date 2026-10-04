@@ -98,6 +98,7 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
     const { error } = await client.from(table).upsert(rows);
     if (error) fail(`Salvarea în ${table} a eșuat`, error);
   };
+  await upsert("audit_firms", changedRows(before.firms, after.firms));
   await upsert("audit_firm_users", changedRows(before.memberships, after.memberships));
   await upsert("entities", changedRows(before.entities, after.entities));
   await upsert("engagements", changedRows(before.engagements, after.engagements));
