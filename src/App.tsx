@@ -13,7 +13,7 @@ import { addComment, addRequest, mutateState, readState, resetState, setRole, up
 import { importRequests, requestTemplate } from "./files";
 
 type Page = "dashboard" | "requests" | "engagements" | "activity" | "team" | "settings";
-type ModalName = "upload" | "detail" | "not-applicable" | "request" | "engagement" | "import" | null;
+type ModalName = "upload" | "detail" | "not-applicable" | "request" | "engagement" | "import" | "invite" | null;
 type SortKey = "code" | "title" | "area" | "period" | "deadline" | "status" | "documents";
 
 const statusTone: Record<RequestStatus, string> = {
@@ -44,10 +44,11 @@ interface AppProps {
   persist?: (before: State, after: State) => Promise<State>;
   reload?: (firm?: string | null) => Promise<State>;
   uploadLive?: (requestId: string, file: File, description: string, period: string) => Promise<void>;
+  inviteLive?: (auditFirmId: string, name: string, email: string, role: Role) => Promise<boolean>;
   logout?: () => Promise<unknown>;
 }
 
-export default function App({ initialState, live = false, persist, reload, uploadLive, logout }: AppProps = {}) {
+export default function App({ initialState, live = false, persist, reload, uploadLive, inviteLive, logout }: AppProps = {}) {
   const [state, setState] = useState<State>(() => initialState ?? readState());
   const [page, setPage] = useState<Page>("dashboard");
   const [modal, setModal] = useState<ModalName>(null);
@@ -153,7 +154,7 @@ export default function App({ initialState, live = false, persist, reload, uploa
 
         {page === "activity" && <ActivityPage state={state} tenantRequests={tenantRequests} profileName={profileName} />}
 
-        {page === "team" && role === "admin" && <TeamPage state={state} save={(next, message) => void save(next, message)} />}
+        {page === "team" && role === "admin" && <TeamPage state={state} save={(next, message) => void save(next, message)} invite={() => { setError(""); setModal("invite"); }} />}
 
         {page === "settings" && role === "admin" && <SettingsPage state={state} setState={setState} notify={notify} live={live} persist={(next, message) => void save(next, message)} switchFirm={async (firmId) => { if (live && reload) setState(await reload(firmId)); else setState(mutateState(state, (draft) => { draft.current_firm_id = firmId; const member = draft.memberships.find((item) => item.audit_firm_id === firmId && item.role === "admin"); if (member) draft.current_user_id = member.user_id; })); }} />}
       </main>
@@ -166,6 +167,7 @@ export default function App({ initialState, live = false, persist, reload, uploa
     {modal === "request" && <RequestForm state={state} close={() => setModal(null)} submit={(request) => { save(addRequest(state, request), "Cerința a fost creată."); setModal(null); }} />}
     {modal === "engagement" && <EngagementForm state={state} close={() => setModal(null)} submit={(engagement, entityName, cui) => { const next = mutateState(state, (draft) => { const entityId = uid(); draft.entities.push({ id: entityId, audit_firm_id: draft.current_firm_id, name: entityName, cui }); draft.engagements.push({ ...engagement, entity_id: entityId }); }); save(next, "Engagement-ul a fost creat."); setModal(null); }} />}
     {modal === "import" && <ImportModal state={state} close={() => setModal(null)} submit={(rows) => { const next = mutateState(state, (draft) => { const at = new Date().toISOString(); for (const row of rows) draft.requests.push({ id: uid(), audit_firm_id: draft.current_firm_id, engagement_id: currentEngagement?.id ?? "", code: row.code!, area: row.area!, title: row.title!, description: row.description ?? "", instructions: row.instructions ?? "", period: row.period || currentEngagement?.period || "", client_owner_id: state.profiles.find((item) => state.memberships.some((membership) => membership.user_id === item.id && membership.role === "client"))?.id ?? "", auditor_id: state.profiles.find((item) => state.memberships.some((membership) => membership.user_id === item.id && membership.role === "auditor"))?.id ?? state.current_user_id, deadline: row.deadline || currentEngagement?.deadline || today(), priority: row.priority ?? "normal", status: "draft", not_applicable_reason: "", created_at: at, updated_at: at }); }); save(next, `${rows.length} cerințe au fost importate.`); setModal(null); }} />}
+    {modal === "invite" && <InviteUserModal close={() => setModal(null)} submit={async (name, email, invitedRole) => { try { if (live && inviteLive && reload) { const invited = await inviteLive(state.current_firm_id, name, email, invitedRole); setState(await reload(state.current_firm_id)); notify(invited ? "Invitația a fost trimisă prin email." : "Accesul utilizatorului existent a fost actualizat."); } else { const next = mutateState(state, (draft) => { const existing = draft.profiles.find((item) => item.email.toLowerCase() === email.toLowerCase()); const userId = existing?.id ?? uid(); if (!existing) draft.profiles.push({ id: userId, name, email }); const membership = draft.memberships.find((item) => item.audit_firm_id === draft.current_firm_id && item.user_id === userId); if (membership) { membership.role = invitedRole; membership.active = true; } else draft.memberships.push({ id: uid(), audit_firm_id: draft.current_firm_id, user_id: userId, role: invitedRole, active: true }); }); setState(next); notify("Utilizatorul demonstrativ a fost adăugat."); } setModal(null); } catch (reason) { setError((reason as Error).message); } }} />}
     {error && <div className="toast error-toast"><CircleAlert/><span>{error}</span><button onClick={() => setError("")}><X/></button></div>}
     {toast && <div className="toast"><CheckCircle2/><span>{toast}</span></div>}
   </div>;
@@ -237,9 +239,29 @@ function ActivityPage({ state, tenantRequests, profileName }: { state: State; te
   return <><div className="page-heading"><div><div className="eyebrow">DE LA ULTIMA AUTENTIFICARE</div><h1>Activitate recentă</h1><p>O urmă clară a documentelor, conversațiilor și modificărilor de status.</p></div></div><section className="panel activity-panel"><div className="activity-summary"><span><strong>{events.filter((item) => item.action === "DOCUMENT_UPLOADED").length}</strong> documente încărcate</span><span><strong>{events.filter((item) => item.action === "COMMENT_ADDED").length}</strong> mesaje noi</span><span><strong>{events.filter((item) => item.action === "STATUS_CHANGED").length}</strong> statusuri schimbate</span></div><div className="timeline">{events.map((event) => { const request = tenantRequests.find((item) => item.id === event.request_id); return <article key={event.id}><i/><div><div><strong>{request ? `${request.code} · ${request.title}` : "Administrare"}</strong><time>{formatDateTime(event.created_at)}</time></div><p>{event.details}</p><small>{profileName(event.actor_id)} · {event.action.replaceAll("_", " ")}</small></div></article>; })}</div></section></>;
 }
 
-function TeamPage({ state, save }: { state: State; save: (state: State, message: string) => void }) {
+function InviteUserModal({ close, submit }: { close: () => void; submit: (name: string, email: string, role: Role) => void | Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  return <Modal title="Invită utilizator" close={close}>
+    <p>Utilizatorul va primi un email de acces și va fi alocat exclusiv tenantului curent.</p>
+    <form onSubmit={async (event) => {
+      event.preventDefault();
+      setBusy(true);
+      const data = new FormData(event.currentTarget);
+      await submit(String(data.get("name")).trim(), String(data.get("email")).trim(), data.get("role") as Role);
+      setBusy(false);
+    }}>
+      <label>Nume complet *<input name="name" required minLength={2} autoComplete="name" placeholder="Maria Ionescu"/></label>
+      <label>Email *<input name="email" type="email" required autoComplete="email" placeholder="maria@companie.ro"/></label>
+      <label>Rol în tenant<select name="role" defaultValue="client"><option value="client">Client</option><option value="auditor">Auditor</option><option value="manager">Manager</option><option value="admin">Administrator</option></select></label>
+      <div className="notice"><ShieldCheck/>Accesul este separat per firmă de audit și este protejat prin MFA.</div>
+      <div className="form-actions"><button type="button" className="secondary" onClick={close}>Renunță</button><button className="primary" disabled={busy}>{busy ? "Se trimite…" : "Trimite invitația"}</button></div>
+    </form>
+  </Modal>;
+}
+
+function TeamPage({ state, save, invite }: { state: State; save: (state: State, message: string) => void; invite: () => void }) {
   const memberships = state.memberships.filter((item) => item.audit_firm_id === state.current_firm_id);
-  return <><div className="page-heading"><div><div className="eyebrow">AUTORIZARE PER TENANT</div><h1>Echipă și acces</h1><p>Rolul este atribuit separat în fiecare firmă de audit.</p></div><button className="primary"><Plus/>Invită utilizator</button></div><section className="panel"><div className="table-wrap flat"><table><thead><tr><th>Utilizator</th><th>Email</th><th>Rol în tenant</th><th>Status</th></tr></thead><tbody>{memberships.map((membership) => { const user = state.profiles.find((item) => item.id === membership.user_id)!; return <tr key={membership.id}><td><strong>{user.name}</strong></td><td>{user.email}</td><td><select value={membership.role} onChange={(event) => { const next = mutateState(state, (draft) => { const row = draft.memberships.find((item) => item.id === membership.id); if (row) row.role = event.target.value as Role; }); save(next, "Rolul a fost actualizat."); }}><option value="admin">Administrator</option><option value="manager">Manager</option><option value="auditor">Auditor</option><option value="client">Client</option></select></td><td><span className={`badge ${membership.active ? "complete" : "neutral"}`}><i/>{membership.active ? "Activ" : "Revocat"}</span></td></tr>; })}</tbody></table></div></section></>;
+  return <><div className="page-heading"><div><div className="eyebrow">AUTORIZARE PER TENANT</div><h1>Echipă și acces</h1><p>Rolul este atribuit separat în fiecare firmă de audit.</p></div><button className="primary" onClick={invite}><Plus/>Invită utilizator</button></div><section className="panel"><div className="table-wrap flat"><table><thead><tr><th>Utilizator</th><th>Email</th><th>Rol în tenant</th><th>Status</th></tr></thead><tbody>{memberships.map((membership) => { const user = state.profiles.find((item) => item.id === membership.user_id)!; return <tr key={membership.id}><td><strong>{user.name}</strong></td><td>{user.email}</td><td><select value={membership.role} onChange={(event) => { const next = mutateState(state, (draft) => { const row = draft.memberships.find((item) => item.id === membership.id); if (row) row.role = event.target.value as Role; }); save(next, "Rolul a fost actualizat."); }}><option value="admin">Administrator</option><option value="manager">Manager</option><option value="auditor">Auditor</option><option value="client">Client</option></select></td><td><span className={`badge ${membership.active ? "complete" : "neutral"}`}><i/>{membership.active ? "Activ" : "Revocat"}</span></td></tr>; })}</tbody></table></div></section></>;
 }
 
 function SettingsPage({ state, live, persist, switchFirm }: { state: State; setState: (state: State) => void; notify: (message: string) => void; live: boolean; persist: (state: State, message: string) => void; switchFirm: (firmId: string) => Promise<void> }) {

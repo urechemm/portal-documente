@@ -10,3 +10,54 @@ sb_publishable_jWmQxdOgRfFyIGOSF8njCg_IKIxWwqP
 primul DB user - administrator:
 urechemm@yahoo.com
 supabaseUMM1980!
+=======================================================================================================
+GitHub:
+https://github.com/urechemm/portal-documente/archive/d75bc359af90b3f254e52e21112a1c1466cb1b7f.zip
+https://github.com/urechemm/portal-documente/archive/3861dc307d8c7d1757c8d18a18ffb1138367c562.zip
+
+=======================================================================================================
+Entra ID Center
+
+Portal Documente Backend
+
+
+Application (Client) ID
+0d487919-1b9a-407b-b545-58773e3bd2c9
+
+Object ID
+97036a8b-87d0-4893-9a16-bd067d1da277
+
+Directory (tenant) ID
+26f35d6d-38de-4b9a-8159-dbb07cd8628f
+
+Supported account types
+My organization only
+
+Client credentials
+SecretID
+a8e6afa2-4463-4078-b71b-afdfc29e2c5e
+Value
+1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_
+
+Redirect URIs
+1 web, 0 spa, 0 public client
+
+Application ID URI
+Add an Application ID URI
+
+Managed application in local directory
+Portal Documente Backend
+
+State
+Activated
+
+======================================================================================================
+PowerShell
+npx supabase link --project-ref iekirbhyctllpvqnvnzk
+npx supabase secrets set MS_TENANT_ID="26f35d6d-38de-4b9a-8159-dbb07cd8628f" MS_CLIENT_ID="0d487919-1b9a-407b-b545-58773e3bd2c9" MS_CLIENT_SECRET="a8e6afa2-4463-4078-b71b-afdfc29e2c5e" APP_ORIGIN="https://documente.celentis.ro"
+npx supabase functions deploy sharepoint-upload 
+======================================================================================================
+Settings
+SharePoint host:          celentis.sharepoint.com
+Cale site SharePoint:     root
+Bibliotecă documente:     Portal-Documente

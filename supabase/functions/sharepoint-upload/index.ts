@@ -67,10 +67,14 @@ Deno.serve(async (request) => {
     const host = String(settings?.data?.sharepoint_host ?? "");
     const sitePath = String(settings?.data?.sharepoint_site_path ?? "");
     const libraryName = String(settings?.data?.sharepoint_library ?? "Documente");
-    if (!host || !sitePath) return json({ error: "Conexiunea SharePoint nu este configurată complet." }, 503);
+    if (!host || !libraryName) return json({ error: "Conexiunea SharePoint nu este configurată complet." }, 503);
 
     const token = await graphToken();
-    const site = await (await graph(token, `/sites/${host}:/${sitePath.replace(/^\//, "")}`)).json();
+    const normalizedSitePath = sitePath.trim().replace(/^\/+|\/+$/g, "");
+    const siteEndpoint = !normalizedSitePath || normalizedSitePath.toLowerCase() === "root"
+      ? "/sites/root"
+      : `/sites/${host}:/${normalizedSitePath}`;
+    const site = await (await graph(token, siteEndpoint)).json();
     const drives = await (await graph(token, `/sites/${site.id}/drives`)).json();
     const drive = drives.value.find((item: { name: string }) => item.name.toLowerCase() === libraryName.toLowerCase());
     if (!drive) return json({ error: `Biblioteca SharePoint „${libraryName}” nu există.` }, 503);

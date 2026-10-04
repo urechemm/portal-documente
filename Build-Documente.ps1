@@ -1,7 +1,7 @@
 param(
     [string]$OutputDirectory = 'documente-upload',
-    [string]$SupabaseUrl = '',
-    [string]$SupabasePublishableKey = ''
+    [string]$SupabaseUrl = 'https://iekirbhyctllpvqnvnzk.supabase.co',
+    [string]$SupabasePublishableKey = 'sb_publishable_jWmQxdOgRfFyIGOSF8njCg_IKIxWwqP'
 )
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
@@ -35,10 +35,6 @@ try {
     Compress-Archive -Path "$PSScriptRoot\$OutputDirectory\*" -DestinationPath $zipPath -Force
     Write-Host "Folder pentru Celentis cPanel: $PSScriptRoot\$OutputDirectory"
     Write-Host "Arhiva ZIP: $zipPath"
-
-    	Write-Host "git add -A"
-	
-	git add -A
 } finally {
     if ($null -ne $previousRuntimeConfig) { Set-Content -LiteralPath $runtimeConfig -Value $previousRuntimeConfig -Encoding UTF8 }
     elseif (Test-Path -LiteralPath $runtimeConfig) { Remove-Item -LiteralPath $runtimeConfig -Force }

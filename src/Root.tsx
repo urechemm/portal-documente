@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ArrowRight, FileCheck2, LockKeyhole, ShieldCheck } from "lucide-react";
 import App from "./App";
-import { createLiveClient, loadLiveState, loadRuntimeConfig, persistLiveDelta, uploadLiveDocument, type RuntimeConfig } from "./live";
+import { createLiveClient, inviteLiveUser, loadLiveState, loadRuntimeConfig, persistLiveDelta, uploadLiveDocument, type RuntimeConfig } from "./live";
 import type { State } from "./domain";
 
 export default function Root() {
@@ -19,6 +19,7 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState("");
   const [mfa, setMfa] = useState<{ mode: "challenge" | "enroll"; factorId: string; qr?: string } | null>(null);
+  const [mustSetPassword, setMustSetPassword] = useState(false);
 
   const refresh = async (firm?: string | null) => {
     setError("");
@@ -26,6 +27,14 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
     catch (reason) { setError((reason as Error).message); }
   };
   const secureSession = async () => {
+    const { data: userData, error: userError } = await client.auth.getUser();
+    if (userError) throw userError;
+    if (userData.user?.user_metadata?.must_set_password === true) {
+      setMustSetPassword(true);
+      setMfa(null);
+      return;
+    }
+    setMustSetPassword(false);
     const { data: level, error: levelError } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
     if (levelError) throw levelError;
     if (level.currentLevel === "aal2") { setMfa(null); await refresh(); return; }
@@ -46,9 +55,29 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
   }, [client]);
   if (!sessionReady) return <div className="loading"><ShieldCheck/><h2>Se verifică sesiunea securizată…</h2></div>;
   if (!signedIn) return <Login client={client} error={error} setError={setError}/>;
+  if (mustSetPassword) return <SetPasswordGate client={client} error={error} setError={setError} completed={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (mfa) return <MfaGate client={client} factor={mfa} error={error} setError={setError} verified={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (!state) return <div className="loading"><ShieldCheck/><h2>{error || "Se încarcă spațiul de audit…"}</h2>{error && <button className="secondary" onClick={() => void refresh()}>Reîncearcă</button>}</div>;
-  return <App initialState={state} live persist={(before, after) => persistLiveDelta(client, before, after)} reload={(firm) => loadLiveState(client, firm)} uploadLive={(requestId, file, description, period) => uploadLiveDocument(client, requestId, file, description, period)} logout={() => client.auth.signOut()}/>;
+  return <App initialState={state} live persist={(before, after) => persistLiveDelta(client, before, after)} reload={(firm) => loadLiveState(client, firm)} uploadLive={(requestId, file, description, period) => uploadLiveDocument(client, requestId, file, description, period)} inviteLive={(auditFirmId, name, email, role) => inviteLiveUser(client, auditFirmId, name, email, role)} logout={() => client.auth.signOut()}/>;
+}
+
+function SetPasswordGate({ client, error, setError, completed }: { client: ReturnType<typeof createLiveClient>; error: string; setError: (value: string) => void; completed: () => void }) {
+  const [busy, setBusy] = useState(false);
+  async function savePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true); setError("");
+    const data = new FormData(event.currentTarget);
+    const password = String(data.get("password") ?? "");
+    const confirmation = String(data.get("confirmation") ?? "");
+    if (password.length < 12) setError("Parola trebuie să conțină minimum 12 caractere.");
+    else if (password !== confirmation) setError("Parolele introduse nu coincid.");
+    else {
+      const { data: userData } = await client.auth.getUser();
+      const { error: updateError } = await client.auth.updateUser({ password, data: { ...(userData.user?.user_metadata ?? {}), must_set_password: false } });
+      if (updateError) setError(updateError.message); else completed();
+    }
+    setBusy(false);
+  }
+  return <div className="mfa-page"><section className="mfa-card"><span className="brand-icon"><LockKeyhole/></span><div className="eyebrow">PRIMA AUTENTIFICARE</div><h1>Configurează parola</h1><p>Alege o parolă nouă pentru accesările viitoare ale portalului.</p><form onSubmit={savePassword}><label>Parolă nouă<input name="password" type="password" minLength={12} autoComplete="new-password" required/></label><label>Confirmă parola<input name="confirmation" type="password" minLength={12} autoComplete="new-password" required/></label><button className="primary" disabled={busy}>{busy ? "Se salvează…" : "Salvează și continuă"}</button></form>{error && <div className="error-box">{error}</div>}</section></div>;
 }
 
 function MfaGate({ client, factor, error, setError, verified }: { client: ReturnType<typeof createLiveClient>; factor: { mode: "challenge" | "enroll"; factorId: string; qr?: string }; error: string; setError: (value: string) => void; verified: () => void }) {

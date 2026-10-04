@@ -8,6 +8,7 @@ Build-ul din `documente-upload` conține configurația publică Supabase și afi
 
 1. `supabase/migrations/202610030001_portal_documente.sql`
 2. `supabase/migrations/202610030002_live_operations.sql`
+3. `supabase/migrations/202610040001_require_mfa.sql`
 
 După migrare, în SQL Editor rulează o singură dată, înlocuind valorile exemplu:
 
@@ -25,8 +26,8 @@ Funcția poate fi apelată numai din SQL Editor/service role. Nu este accesibil�
 
 În Authentication → URL Configuration:
 
-- Site URL: `https://documete.celentis.ro`
-- Redirect URLs: `https://documete.celentis.ro/**`
+- Site URL: `https://documente.celentis.ro`
+- Redirect URLs: `https://documente.celentis.ro/**`
 
 Activează autentificarea Email/Password. Aplicația impune TOTP la prima autentificare și afișează codul QR pentru Microsoft Authenticator sau altă aplicație compatibilă.
 
@@ -48,7 +49,7 @@ Autentifică Supabase CLI și rulează:
 
 ```powershell
 supabase link --project-ref PROJECT_REF
-supabase secrets set MS_TENANT_ID="..." MS_CLIENT_ID="..." MS_CLIENT_SECRET="..." APP_ORIGIN="https://documete.celentis.ro"
+supabase secrets set MS_TENANT_ID="..." MS_CLIENT_ID="..." MS_CLIENT_SECRET="..." APP_ORIGIN="https://documente.celentis.ro"
 supabase functions deploy sharepoint-upload
 ```
 
@@ -60,7 +61,7 @@ După autentificarea administratorului, completează în Setări → Conexiuni:
 
 - Email Global Administrator;
 - SharePoint host, de exemplu `firma.sharepoint.com`;
-- Cale site, de exemplu `sites/Audit`;
+- Cale site: `root` pentru site-ul rădăcină sau, de exemplu, `sites/Audit` pentru un site separat;
 - Biblioteca, de exemplu `Documente`;
 - utilizatorul Microsoft 365 folosit pentru administrare.
 

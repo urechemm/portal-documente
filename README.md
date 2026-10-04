@@ -23,6 +23,6 @@ Scriptul solicită URL-ul și cheia publică Supabase, apoi creează folderul `d
 
 ## Backend
 
-Migrarea inițială este în `supabase/migrations/202610030001_portal_documente.sql`. Include modelul multi-tenant, RLS, apartenențe per firmă, acces per engagement și audit trail imuabil.
+Migrările din `supabase/migrations` includ modelul multi-tenant, RLS, apartenențe per firmă, acces per engagement, audit trail imuabil și obligativitatea MFA (AAL2) pentru accesul la datele aplicației.
 
 Integrarea SharePoint necesită o aplicație Microsoft Entra, permisiuni Microsoft Graph și autentificare interactivă. Până la configurarea acestora, upload-ul demonstrativ salvează numai metadatele documentului local și nu pretinde că fișierul a fost transmis în SharePoint.

@@ -121,3 +121,12 @@ export async function uploadLiveDocument(client: SupabaseClient, requestId: stri
   if (error) throw new Error(error.message || "Upload-ul SharePoint a eșuat.");
   if (data?.error) throw new Error(data.error);
 }
+
+export async function inviteLiveUser(client: SupabaseClient, auditFirmId: string, name: string, email: string, role: string): Promise<boolean> {
+  const { data, error } = await client.functions.invoke("invite-user", {
+    body: { audit_firm_id: auditFirmId, name, email, role },
+  });
+  if (error) throw new Error(error.message || "Invitația nu a reușit.");
+  if (data?.error) throw new Error(data.error);
+  return !!data?.invited;
+}
