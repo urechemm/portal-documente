@@ -37,6 +37,9 @@ export interface Entity {
   audit_firm_id: string;
   name: string;
   cui: string;
+  address: string;
+  contact_name: string;
+  email: string;
 }
 export interface Engagement {
   id: string;
@@ -44,9 +47,20 @@ export interface Engagement {
   entity_id: string;
   name: string;
   period: string;
+  start_date: string;
+  end_date: string;
+  financial_statement_date: string;
+  confirmation_date: string;
   deadline: string;
   status: "active" | "closed";
   manager_id: string;
+  auditor_id: string;
+  client_id: string;
+}
+export interface EngagementUser {
+  engagement_id: string;
+  audit_firm_id: string;
+  user_id: string;
 }
 export interface PbcRequest {
   id: string;
@@ -116,6 +130,7 @@ export interface State {
   memberships: Membership[];
   entities: Entity[];
   engagements: Engagement[];
+  engagement_users: EngagementUser[];
   requests: PbcRequest[];
   documents: DocumentRecord[];
   comments: Comment[];
@@ -203,8 +218,12 @@ export function createDemo(): State {
       { id: "mem-3", audit_firm_id: firm, user_id: client, role: "client", active: true },
       { id: "mem-4", audit_firm_id: firm2, user_id: admin, role: "admin", active: true },
     ],
-    entities: [{ id: "entity-abc", audit_firm_id: firm, name: "ABC SRL", cui: "RO12345678" }],
-    engagements: [{ id: engagement, audit_firm_id: firm, entity_id: "entity-abc", name: "Audit statutar ABC SRL", period: "31 decembrie 2026", deadline: "2027-01-31", status: "active", manager_id: admin }],
+    entities: [{ id: "entity-abc", audit_firm_id: firm, name: "ABC SRL", cui: "RO12345678", address: "", contact_name: "Maria Ionescu", email: "client@demo.local" }],
+    engagements: [{ id: engagement, audit_firm_id: firm, entity_id: "entity-abc", name: "Audit statutar ABC SRL", period: "01.01.2026 – 31.12.2026", start_date: "2026-01-01", end_date: "2026-12-31", financial_statement_date: "2026-12-31", confirmation_date: "2027-01-31", deadline: "2027-01-31", status: "active", manager_id: auditor, auditor_id: auditor, client_id: client }],
+    engagement_users: [
+      { engagement_id: engagement, audit_firm_id: firm, user_id: auditor },
+      { engagement_id: engagement, audit_firm_id: firm, user_id: client },
+    ],
     requests,
     documents: [
       { id: "doc-1", audit_firm_id: firm, request_id: "req-2", name: "Registru_mijloace_fixe_2026.xlsx", description: "Registrul complet la 31.12.2026, cu cost și amortizare cumulată.", period: "31.12.2026", uploaded_by: client, uploaded_at: "2027-01-14T10:43:00Z", version: 1, status: "new", auditor_comment: "", size: 128400, storage_path: "" },

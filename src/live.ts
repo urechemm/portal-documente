@@ -55,16 +55,17 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   if (!firmId) throw new Error("Utilizatorul nu este alocat niciunui tenant activ.");
   sessionStorage.setItem("portal-live-firm", firmId);
 
-  const [entities, engagements, requests, documents, comments, events, settings] = await Promise.all([
+  const [entities, engagements, engagementUsers, requests, documents, comments, events, settings] = await Promise.all([
     client.from("entities").select("*").eq("audit_firm_id", firmId).order("name"),
     client.from("engagements").select("*").eq("audit_firm_id", firmId).order("created_at", { ascending: false }),
+    client.from("engagement_users").select("engagement_id,audit_firm_id,user_id").eq("audit_firm_id", firmId),
     client.from("pbc_requests").select("*").eq("audit_firm_id", firmId).order("created_at"),
     client.from("documents").select("*").eq("audit_firm_id", firmId).order("uploaded_at", { ascending: false }),
     client.from("comments").select("*").eq("audit_firm_id", firmId).order("created_at"),
     client.from("audit_events").select("*").eq("audit_firm_id", firmId).order("created_at", { ascending: false }).limit(500),
     client.from("app_settings").select("data").eq("audit_firm_id", firmId).maybeSingle(),
   ]);
-  for (const [label, result] of [["entitățile", entities], ["engagement-urile", engagements], ["cerințele", requests], ["documentele", documents], ["comentariile", comments], ["activitatea", events]] as const)
+  for (const [label, result] of [["entitățile", entities], ["misiunile", engagements], ["membrii misiunilor", engagementUsers], ["cerințele", requests], ["documentele", documents], ["comentariile", comments], ["activitatea", events]] as const)
     if (result.error) fail(`Nu am putut încărca ${label}`, result.error);
 
   const baseSettings: Settings = {
@@ -80,7 +81,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   }));
   return {
     firms, profiles: profilesResult.data ?? [], memberships,
-    entities: entities.data ?? [], engagements: engagements.data ?? [], requests: requests.data ?? [],
+    entities: entities.data ?? [], engagements: engagements.data ?? [], engagement_users: engagementUsers.data ?? [], requests: requests.data ?? [],
     documents: documentRows, comments: comments.data ?? [],
     events: (events.data ?? []).map((item) => ({ ...item, details: typeof item.details === "string" ? item.details : String(item.details?.message ?? item.action) })),
     settings: { ...baseSettings, ...(settings.data?.data ?? {}) },
@@ -103,6 +104,7 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
   await upsert("audit_firm_users", changedRows(before.memberships, after.memberships));
   await upsert("entities", changedRows(before.entities, after.entities));
   await upsert("engagements", changedRows(before.engagements, after.engagements));
+  await upsert("engagement_users", after.engagement_users.filter((item) => !before.engagement_users.some((old) => old.engagement_id === item.engagement_id && old.user_id === item.user_id)));
   await upsert("pbc_requests", changedRows(before.requests, after.requests));
   await upsert("comments", changedRows(before.comments, after.comments));
   if (JSON.stringify(before.settings) !== JSON.stringify(after.settings)) {
