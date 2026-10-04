@@ -13,6 +13,11 @@ export interface AuditFirm {
   id: string;
   name: string;
   code: string;
+  cui: string;
+  email: string;
+  phone: string;
+  website: string;
+  address: string;
   active: boolean;
 }
 export interface Profile {
@@ -184,8 +189,8 @@ export function createDemo(): State {
   ];
   return {
     firms: [
-      { id: firm, name: "Celentis Audit", code: "CELENTIS", active: true },
-      { id: firm2, name: "Demo Audit Network", code: "DEMO", active: true },
+      { id: firm, name: "Celentis Audit", code: "CELENTIS", cui: "", email: "office@celentis.ro", phone: "", website: "", address: "", active: true },
+      { id: firm2, name: "Demo Audit Network", code: "DEMO", cui: "", email: "office@demo.local", phone: "", website: "", address: "", active: true },
     ],
     profiles: [
       { id: admin, name: "Mihai Ureche", email: "administrator@demo.local" },

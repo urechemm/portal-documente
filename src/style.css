@@ -43,6 +43,9 @@ svg { flex: 0 0 auto; }
 .workspace-tag strong, .workspace-tag small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .workspace-tag strong { font-size: .8rem; }
 .workspace-tag small { color: var(--muted); margin-top: 3px; font-size: .68rem; }
+.workspace-picker { position: relative; cursor: pointer; }
+.workspace-picker select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.workspace-picker:focus-within { outline: 3px solid #56c8e8; outline-offset: 2px; }
 .workspace-logo, .entity-mark { display: grid; place-items: center; width: 42px; height: 34px; border: 1px solid #d5eaf3; border-radius: 7px; background: #eef9fc; color: #087fb9; font-weight: 800; font-size: .75rem; }
 .nav-label, .eyebrow { font-size: .67rem; letter-spacing: .15em; color: #4389a9; font-weight: 750; margin: 0 12px 12px; }
 .sidebar nav { display: grid; gap: 5px; }

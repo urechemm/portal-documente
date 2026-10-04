@@ -40,7 +40,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   const [profilesResult, membershipsResult, firmsResult, adminResult] = await Promise.all([
     client.from("profiles").select("id,name,email"),
     client.from("audit_firm_users").select("id,audit_firm_id,user_id,role,active").eq("active", true),
-    client.from("audit_firms").select("id,name,code,active").eq("active", true),
+    client.from("audit_firms").select("id,name,code,cui,email,phone,website,address,active").order("name"),
     client.from("global_admins").select("user_id").eq("user_id", user.id).maybeSingle(),
   ]);
   if (profilesResult.error) fail("Profilurile nu au putut fi încărcate", profilesResult.error);
@@ -49,8 +49,9 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   const memberships = membershipsResult.data ?? [];
   const allowed = new Set(memberships.filter((item) => item.user_id === user.id).map((item) => item.audit_firm_id));
   const firms = (firmsResult.data ?? []).filter((item) => allowed.has(item.id) || !!adminResult.data);
+  const activeFirms = firms.filter((item) => item.active);
   const remembered = requestedFirm ?? sessionStorage.getItem("portal-live-firm");
-  const firmId = firms.some((item) => item.id === remembered) ? remembered! : firms[0]?.id;
+  const firmId = activeFirms.some((item) => item.id === remembered) ? remembered! : activeFirms[0]?.id;
   if (!firmId) throw new Error("Utilizatorul nu este alocat niciunui tenant activ.");
   sessionStorage.setItem("portal-live-firm", firmId);
 
