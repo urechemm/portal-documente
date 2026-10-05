@@ -11,6 +11,7 @@ Build-ul din `documente-upload` conține configurația publică Supabase și afi
 3. `supabase/migrations/202610040001_require_mfa.sql`
 4. `supabase/migrations/202610050001_tenant_storage_credentials.sql`
 5. `supabase/migrations/202610050002_storage_provider_credentials.sql`
+6. `supabase/migrations/202610050003_realtime_portal_updates.sql`
 
 După migrare, în SQL Editor rulează o singură dată, înlocuind valorile exemplu:
 

@@ -38,6 +38,21 @@ async function graph(token: string, url: string, init: RequestInit = {}) {
   return response;
 }
 
+async function ensureFolders(token: string, driveId: string, segments: string[]) {
+  let parent = await (await graph(token, `/drives/${driveId}/root?$select=id`)).json();
+  for (const segment of segments.map(clean).filter(Boolean)) {
+    const lookupUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${parent.id}:/${encodeURIComponent(segment)}?$select=id`;
+    const lookup = await fetch(lookupUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (lookup.ok) { parent = await lookup.json(); continue; }
+    if (lookup.status !== 404) throw new Error(`Microsoft Graph ${lookup.status}: ${(await lookup.text()).slice(0, 300)}`);
+    parent = await (await graph(token, `/drives/${driveId}/items/${parent.id}/children`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: segment, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }),
+    })).json();
+  }
+}
+
 async function uploadFile(token: string, base: string, file: File) {
   if (file.size <= 4 * 1024 * 1024) {
     await graph(token, `${base}/content`, { method: "PUT", headers: { "Content-Type": file.type || "application/octet-stream" }, body: await file.arrayBuffer() });
@@ -68,16 +83,22 @@ Deno.serve(async (request) => {
     const requestId = String(form.get("request_id") ?? "");
     const description = String(form.get("description") ?? "").trim();
     const period = String(form.get("period") ?? "").trim();
+    const relativePath = String(form.get("relative_path") ?? "").trim();
     const file = form.get("file");
     if (!(file instanceof File) || !requestId || description.length < 12 || !period) return json({ error: "Fișierul, descrierea și perioada sunt obligatorii." }, 400);
     if (file.size > 250 * 1024 * 1024) return json({ error: "Fișierul depășește limita de 250 MB." }, 413);
+    const relativeParts = relativePath.split(/[\\/]+/).map((part) => part.trim()).filter((part) => part && part !== "." && part !== "..");
+    const relativeFolders = relativeParts.slice(0, -1).map(clean);
+    const safeFileName = clean(file.name);
+    const documentName = [...relativeFolders, safeFileName].join("/");
 
     const { data: pbc, error: pbcError } = await userClient.from("pbc_requests").select("id,code,title,audit_firm_id,engagement_id,engagements!inner(name,period,entity_id,entities!inner(name))").eq("id", requestId).single();
     if (pbcError || !pbc) return json({ error: "Cerința nu există, nu este asignată clientului curent sau sesiunea nu are MFA activ." }, 403);
     const { data: settings } = await adminClient.from("app_settings").select("data").eq("audit_firm_id", pbc.audit_firm_id).single();
     const engagement = Array.isArray(pbc.engagements) ? pbc.engagements[0] : pbc.engagements;
     const entity = Array.isArray(engagement.entities) ? engagement.entities[0] : engagement.entities;
-    const path = encodedPath([entity.name, engagement.name, `${pbc.code} - ${pbc.title}`]);
+    const requestFolders = [entity.name, engagement.name, `${pbc.code} - ${pbc.title}`].map(clean);
+    const path = encodedPath(requestFolders);
     const savedProvider = String(settings?.data?.storage_provider ?? "sharepoint");
     const provider = savedProvider === "onedrive"
       ? (settings?.data?.onedrive_account_type === "business" ? "onedrive_business" : "onedrive_personal")
@@ -103,8 +124,11 @@ Deno.serve(async (request) => {
       const drives = await (await graph(token, `/sites/${site.id}/drives`)).json();
       const drive = drives.value.find((item: { name: string }) => item.name.toLowerCase() === libraryName.toLowerCase());
       if (!drive) return json({ error: `Biblioteca SharePoint „${libraryName}” nu a fost găsită pe site-ul configurat.` }, 503);
-      await uploadFile(token, `/drives/${drive.id}/root:/${path}/${encodeURIComponent(clean(file.name))}:`, file);
-      storagePath = `sharepoint:${path}/${clean(file.name)}`;
+      await ensureFolders(token, drive.id, [...requestFolders, ...relativeFolders]);
+      const nestedPath = encodedPath(relativeFolders);
+      const destination = [path, nestedPath, encodeURIComponent(safeFileName)].filter(Boolean).join("/");
+      await uploadFile(token, `/drives/${drive.id}/root:/${destination}:`, file);
+      storagePath = `sharepoint:${destination}`;
     } else if (provider === "onedrive_personal" || provider === "onedrive_business") {
       const personal = provider === "onedrive_personal";
       const folder = String((personal ? settings?.data?.onedrive_personal_folder_path : settings?.data?.onedrive_business_folder_path) ?? settings?.data?.onedrive_folder_path ?? "").trim();
@@ -120,15 +144,19 @@ Deno.serve(async (request) => {
       if (!tenantId || !clientId || !clientSecret || !refreshToken) return json({ error: `Credențialele ONEDRIVE_*_${suffix} nu sunt configurate în Setări → Conexiuni.` }, 503);
       const token = await oneDriveToken(tenantId, clientId, clientSecret, refreshToken);
       const root = encodedPath(folder.split("/"));
-      await uploadFile(token, `/me/drive/root:/${root}/${path}/${encodeURIComponent(clean(file.name))}:`, file);
-      storagePath = `onedrive:${root}/${path}/${clean(file.name)}`;
+      const drive = await (await graph(token, "/me/drive?$select=id")).json();
+      await ensureFolders(token, drive.id, [...folder.split("/"), ...requestFolders, ...relativeFolders]);
+      const nestedPath = encodedPath(relativeFolders);
+      const destination = [root, path, nestedPath, encodeURIComponent(safeFileName)].filter(Boolean).join("/");
+      await uploadFile(token, `/me/drive/root:/${destination}:`, file);
+      storagePath = `onedrive:${destination}`;
     } else {
       return json({ error: "Backend-ul de stocare selectat nu este valid." }, 400);
     }
 
-    const { data: versions } = await adminClient.from("documents").select("version").eq("request_id", requestId).eq("name", file.name).order("version", { ascending: false }).limit(1);
+    const { data: versions } = await adminClient.from("documents").select("version").eq("request_id", requestId).eq("name", documentName).order("version", { ascending: false }).limit(1);
     const version = Number(versions?.[0]?.version ?? 0) + 1;
-    const { error: insertError } = await adminClient.from("documents").insert({ audit_firm_id: pbc.audit_firm_id, request_id: requestId, name: file.name, description, period, uploaded_by: userData.user.id, version, status: "new", size_bytes: file.size, storage_path: storagePath });
+    const { error: insertError } = await adminClient.from("documents").insert({ audit_firm_id: pbc.audit_firm_id, request_id: requestId, name: documentName, description, period, uploaded_by: userData.user.id, version, status: "new", size_bytes: file.size, storage_path: storagePath });
     if (insertError) throw insertError;
     return json({ ok: true, version });
   } catch (error) {

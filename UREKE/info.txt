@@ -51,12 +51,14 @@ ONEDRIVE_REFRESH_TOKEN : instructiuni aici: https://chatgpt.com/share/e/6ac325e1
 A) OneDrive personal :
 
 Entra ID Center - urechemm@yahoo.com - cont Microsoft personal
+
 Display name: Portal-Documente
 Directory (Tenant) ID		5e49785a-26a0-4b1c-98c7-a1c3b88b8d6e
 Application (Client) ID 	49e4ed42-3776-473b-a7eb-de2b01611e92
 							consumers
+Client secret Value			Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7							
 Object ID					8109a665-25de-4316-b1c5-216e6019813d
-Client secret Value			Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7
+
 Client secret ID			58ba28ca-c8bb-4c08-bc2e-e60ac18901ba
 ONEDRIVE_REFRESH_TOKEN :?
 

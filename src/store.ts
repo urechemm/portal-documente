@@ -42,11 +42,11 @@ export function updateRequestStatus(state: State, requestId: string, status: Req
   });
 }
 
-export function uploadDocument(state: State, requestId: string, file: File, description: string, period: string) {
+export function uploadDocument(state: State, requestId: string, file: File, description: string, period: string, relativePath = file.name) {
   return mutateState(state, (draft) => {
-    const versions = draft.documents.filter((item) => item.request_id === requestId && item.name === file.name);
+    const versions = draft.documents.filter((item) => item.request_id === requestId && item.name === relativePath);
     const document: DocumentRecord = {
-      id: uid(), audit_firm_id: draft.current_firm_id, request_id: requestId, name: file.name,
+      id: uid(), audit_firm_id: draft.current_firm_id, request_id: requestId, name: relativePath,
       description, period, uploaded_by: draft.current_user_id, uploaded_at: new Date().toISOString(),
       version: versions.length + 1, status: "new", auditor_comment: "", size: file.size, storage_path: "",
     };
@@ -54,7 +54,7 @@ export function uploadDocument(state: State, requestId: string, file: File, desc
     const request = draft.requests.find((item) => item.id === requestId);
     if (request && ["draft", "requested", "clarification"].includes(request.status)) request.status = "received";
     if (request) request.updated_at = document.uploaded_at;
-    draft.events.unshift(event(draft, requestId, "DOCUMENT_UPLOADED", `${file.name} · versiunea ${document.version}`));
+    draft.events.unshift(event(draft, requestId, "DOCUMENT_UPLOADED", `${relativePath} · versiunea ${document.version}`));
   });
 }
 

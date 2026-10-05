@@ -53,12 +53,51 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
     const { data } = client.auth.onAuthStateChange((event, session) => { setSignedIn(!!session); if (session && event === "SIGNED_IN") void secureSession().catch((reason) => setError((reason as Error).message)); else if (!session) { setState(null); setMfa(null); } });
     return () => data.subscription.unsubscribe();
   }, [client]);
+  useEffect(() => {
+    const firmId = state?.current_firm_id;
+    if (!firmId || !signedIn) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let syncing = false;
+    let pending = false;
+    let active = true;
+
+    const synchronize = async () => {
+      if (syncing) { pending = true; return; }
+      syncing = true;
+      try {
+        const next = await loadLiveState(client, firmId);
+        if (active) { setState(next); setError(""); }
+      } catch (reason) {
+        if (active) setError((reason as Error).message);
+      } finally {
+        syncing = false;
+        if (pending && active) { pending = false; timer = setTimeout(() => void synchronize(), 150); }
+      }
+    };
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void synchronize(), 200);
+    };
+    const changes = { event: "*" as const, schema: "public", filter: `audit_firm_id=eq.${firmId}` };
+    const channel = client.channel(`portal-documente-${firmId}`)
+      .on("postgres_changes", { ...changes, table: "pbc_requests" }, schedule)
+      .on("postgres_changes", { ...changes, table: "documents" }, schedule)
+      .on("postgres_changes", { ...changes, table: "comments" }, schedule)
+      .on("postgres_changes", { ...changes, table: "audit_events" }, schedule)
+      .subscribe();
+
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+      void client.removeChannel(channel);
+    };
+  }, [client, signedIn, state?.current_firm_id]);
   if (!sessionReady) return <div className="loading"><ShieldCheck/><h2>Se verifică sesiunea securizată…</h2></div>;
   if (!signedIn) return <Login client={client} error={error} setError={setError}/>;
   if (mustSetPassword) return <SetPasswordGate client={client} error={error} setError={setError} completed={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (mfa) return <MfaGate client={client} factor={mfa} error={error} setError={setError} verified={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (!state) return <div className="loading"><ShieldCheck/><h2>{error || "Se încarcă spațiul de audit…"}</h2>{error && <button className="secondary" onClick={() => void refresh()}>Reîncearcă</button>}</div>;
-  return <App initialState={state} live persist={(before, after) => persistLiveDelta(client, before, after)} reload={(firm) => loadLiveState(client, firm)} uploadLive={(requestId, file, description, period) => uploadLiveDocument(client, requestId, file, description, period)} testStorage={(auditFirmId, provider, configuration) => testLiveStorage(client, auditFirmId, provider, configuration)} saveStorageCredential={(auditFirmId, provider, credentials) => saveLiveStorageCredential(client, auditFirmId, provider, credentials)} inviteLive={(auditFirmId, name, email, role) => inviteLiveUser(client, auditFirmId, name, email, role)} logout={() => client.auth.signOut()}/>;
+  return <App initialState={state} live persist={async (before, after) => { const next = await persistLiveDelta(client, before, after); setState(next); return next; }} reload={async (firm) => { const next = await loadLiveState(client, firm); setState(next); return next; }} uploadLive={(requestId, file, description, period, relativePath) => uploadLiveDocument(client, requestId, file, description, period, relativePath)} testStorage={(auditFirmId, provider, configuration) => testLiveStorage(client, auditFirmId, provider, configuration)} saveStorageCredential={(auditFirmId, provider, credentials) => saveLiveStorageCredential(client, auditFirmId, provider, credentials)} inviteLive={(auditFirmId, name, email, role) => inviteLiveUser(client, auditFirmId, name, email, role)} logout={() => client.auth.signOut()}/>;
 }
 
 function SetPasswordGate({ client, error, setError, completed }: { client: ReturnType<typeof createLiveClient>; error: string; setError: (value: string) => void; completed: () => void }) {

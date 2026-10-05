@@ -173,11 +173,12 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
   return loadLiveState(client, after.current_firm_id);
 }
 
-export async function uploadLiveDocument(client: SupabaseClient, requestId: string, file: File, description: string, period: string): Promise<void> {
+export async function uploadLiveDocument(client: SupabaseClient, requestId: string, file: File, description: string, period: string, relativePath?: string): Promise<void> {
   const form = new FormData();
   form.set("request_id", requestId);
   form.set("description", description);
   form.set("period", period);
+  form.set("relative_path", relativePath || file.name);
   form.set("file", file);
   const { data, error } = await client.functions.invoke("sharepoint-upload", { body: form });
   if (error) throw new Error(await edgeFunctionError(error, "Upload-ul documentului a eșuat."));

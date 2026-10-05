@@ -235,9 +235,27 @@ label small { color: var(--muted); font-weight: 400; }
 .context-card small, .context-card strong { display: block; }
 .context-card small { color: var(--muted); margin-bottom: 4px; }
 .upload-zone { min-height: 155px; align-items: center; justify-content: center; padding: 22px; border: 2px dashed #bddce8; border-radius: 9px; background: #f5fbfd; text-align: center; }
+.upload-zone.dragging { border-color: var(--cyan); background: #e8f8fc; box-shadow: inset 0 0 0 2px #08a5d21f; }
 .upload-zone > svg { color: #079dc9; }
 .upload-zone span { color: var(--muted); font-weight: 400; }
 .upload-zone input { min-height: auto; border: 0; background: transparent; width: auto; max-width: 100%; }
+.upload-picker-actions { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+.upload-picker-actions button { display: inline-flex; align-items: center; gap: 6px; }
+.upload-picker-actions svg { width: 16px; }
+.upload-picker-input { display: none; }
+.upload-file-list { max-height: 210px; overflow: auto; margin: 12px 0 16px; border: 1px solid var(--line); border-radius: 8px; }
+.upload-file-list article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 9px 11px; border-bottom: 1px solid var(--line); }
+.upload-file-list article:last-child { border-bottom: 0; }
+.upload-file-list article > svg { width: 17px; color: #588096; }
+.upload-file-list article > div { min-width: 0; }
+.upload-file-list strong, .upload-file-list small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-file-list strong { font-size: .75rem; }
+.upload-file-list small { margin-top: 3px; color: var(--muted); font-size: .67rem; }
+.upload-file-list article.done > svg:last-child { color: var(--green); }
+.upload-file-list article.error { background: #fff5f3; }
+.upload-file-list article.error > svg:last-child, .upload-file-list article.error small { color: #b94b45; }
+.upload-file-list article button { display: grid; place-items: center; padding: 3px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.upload-file-list article button svg { width: 15px; }
 .notice { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0; padding: 12px 14px; border: 1px solid #d4e7ef; border-radius: 7px; background: #f3f9fb; color: #3b718b; font-size: .74rem; line-height: 1.5; }
 .notice svg { width: 17px; }
 .detail-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }

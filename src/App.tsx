@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   Activity, Bell, Building2, Check, CheckCircle2, ChevronDown, ChevronRight,
   ChevronsUpDown, CircleAlert, Clock3, Download, FileCheck2, Files, FileText,
@@ -43,7 +43,7 @@ interface AppProps {
   live?: boolean;
   persist?: (before: State, after: State) => Promise<State>;
   reload?: (firm?: string | null) => Promise<State>;
-  uploadLive?: (requestId: string, file: File, description: string, period: string) => Promise<void>;
+  uploadLive?: (requestId: string, file: File, description: string, period: string, relativePath?: string) => Promise<void>;
   testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>;
   saveStorageCredential?: (auditFirmId: string, provider: StorageProvider, credentials: Record<string, string>) => Promise<void>;
   inviteLive?: (auditFirmId: string, name: string, email: string, role: Role) => Promise<boolean>;
@@ -64,6 +64,10 @@ export default function App({ initialState, live = false, persist, reload, uploa
   const [mobileNav, setMobileNav] = useState(false);
   const [toast, setToast] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (initialState) setState(initialState);
+  }, [initialState]);
 
   const firm = state.firms.find((item) => item.id === state.current_firm_id)!;
   const membership = state.memberships.find((item) => item.audit_firm_id === state.current_firm_id && item.user_id === state.current_user_id)!;
@@ -194,7 +198,24 @@ export default function App({ initialState, live = false, persist, reload, uploa
     </section>
 
     {modal === "detail" && selected && <RequestDetail request={selected} documents={docsFor(selected.id)} comments={comments.filter((item) => item.request_id === selected.id)} profileName={profileName} auditUser={auditUser} close={() => setModal(null)} upload={() => setModal("upload")} notApplicable={() => setModal("not-applicable")} updateStatus={(status) => save(updateRequestStatus(state, selected.id, status), `Cerința este acum „${statusLabels[status]}”.`)} addMessage={(body) => save(addComment(state, selected.id, body), "Mesajul a fost adăugat.")} />}
-    {modal === "upload" && selected && <UploadModal request={selected} close={() => setModal(null)} submit={async (file, description, period) => { if (live && uploadLive && reload) { try { await uploadLive(selected.id, file, description, period); setState(await reload(state.current_firm_id)); notify("Documentul a fost încărcat în spațiul de stocare configurat."); setModal("detail"); } catch (reason) { setError((reason as Error).message); } } else { void save(uploadDocument(state, selected.id, file, description, period), "Documentul a fost asociat cerinței."); setModal("detail"); } }} />}
+    {modal === "upload" && selected && <UploadModal request={selected} close={() => setModal(null)} submit={async (items, description, period, report) => {
+      const failures: string[] = [];
+      if (live && uploadLive && reload) {
+        for (const item of items) {
+          report(item.key, "uploading");
+          try { await uploadLive(selected.id, item.file, description, period, item.relativePath); report(item.key, "done"); }
+          catch (reason) { const message = (reason as Error).message; failures.push(`${item.relativePath}: ${message}`); report(item.key, "error", message); }
+        }
+        setState(await reload(state.current_firm_id));
+      } else {
+        let next = state;
+        for (const item of items) { report(item.key, "uploading"); next = uploadDocument(next, selected.id, item.file, description, period, item.relativePath); report(item.key, "done"); }
+        await save(next, `${items.length} documente au fost asociate cerinței.`);
+      }
+      if (failures.length) throw new Error(`${items.length - failures.length} din ${items.length} fișiere au fost încărcate. Erori: ${failures.slice(0, 3).join(" | ")}`);
+      notify(`${items.length} ${items.length === 1 ? "document a fost încărcat" : "documente au fost încărcate"} în spațiul de stocare configurat.`);
+      setModal("detail");
+    }} />}
     {modal === "not-applicable" && selected && <NotApplicableModal close={() => setModal("detail")} submit={(reason) => { save(updateRequestStatus(state, selected.id, "not_applicable", reason), "Explicația a fost înregistrată în audit trail."); setModal("detail"); }} />}
     {modal === "request" && currentEngagement && <RequestForm state={state} engagement={currentEngagement} close={() => setModal(null)} submit={(request) => { save(addRequest(state, request), "Cerința a fost creată."); setModal(null); }} />}
     {modal === "engagement" && <EngagementForm state={state} close={() => setModal(null)} submit={(engagement, entityDetails, memberIds) => { const next = mutateState(state, (draft) => { const entityId = uid(); draft.entities.push({ id: entityId, audit_firm_id: draft.current_firm_id, ...entityDetails }); draft.engagements.push({ ...engagement, entity_id: entityId }); for (const userId of new Set([engagement.auditor_id, engagement.client_id, ...memberIds])) draft.engagement_users.push({ engagement_id: engagement.id, audit_firm_id: draft.current_firm_id, user_id: userId }); }); setSelectedEngagementId(engagement.id); sessionStorage.setItem("portal-selected-engagement", engagement.id); save(next, "Misiunea a fost creată."); setModal(null); }} />}
@@ -237,11 +258,91 @@ function RequestDetail({ request, documents, comments, profileName, auditUser, c
   </Modal>;
 }
 
-function UploadModal({ request, close, submit }: { request: PbcRequest; close: () => void; submit: (file: File, description: string, period: string) => void | Promise<void> }) {
-  const [file, setFile] = useState<File | null>(null);
+type UploadItemStatus = "pending" | "uploading" | "done" | "error";
+type UploadBatchItem = { key: string; file: File; relativePath: string };
+type DroppedEntry = {
+  isFile: boolean;
+  isDirectory: boolean;
+  name: string;
+  file?: (success: (file: File) => void, error?: (reason: unknown) => void) => void;
+  createReader?: () => { readEntries: (success: (entries: DroppedEntry[]) => void, error?: (reason: unknown) => void) => void };
+};
+
+const uploadItem = (file: File, path?: string): UploadBatchItem => {
+  const relativePath = (path || (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name).replaceAll("\\", "/").replace(/^\/+/, "");
+  return { file, relativePath, key: `${relativePath}:${file.size}:${file.lastModified}` };
+};
+
+async function filesFromEntry(entry: DroppedEntry, parent = ""): Promise<UploadBatchItem[]> {
+  const path = parent ? `${parent}/${entry.name}` : entry.name;
+  if (entry.isFile && entry.file) {
+    const file = await new Promise<File>((resolve, reject) => entry.file!(resolve, reject));
+    return [uploadItem(file, path)];
+  }
+  if (!entry.isDirectory || !entry.createReader) return [];
+  const reader = entry.createReader();
+  const children: DroppedEntry[] = [];
+  while (true) {
+    const batch = await new Promise<DroppedEntry[]>((resolve, reject) => reader.readEntries(resolve, reject));
+    if (!batch.length) break;
+    children.push(...batch);
+  }
+  const nested = await Promise.all(children.map((child) => filesFromEntry(child, path)));
+  return nested.flat();
+}
+
+function UploadModal({ request, close, submit }: { request: PbcRequest; close: () => void; submit: (items: UploadBatchItem[], description: string, period: string, report: (key: string, status: UploadItemStatus, message?: string) => void) => Promise<void> }) {
+  const [items, setItems] = useState<UploadBatchItem[]>([]);
+  const [statuses, setStatuses] = useState<Record<string, { status: UploadItemStatus; message?: string }>>({});
   const [description, setDescription] = useState("");
   const [period, setPeriod] = useState(request.period);
-  return <Modal title="Încarcă document" close={close}><div className="context-card"><small>Cerință</small><strong>{request.code} · {request.title}</strong></div><form onSubmit={(event) => { event.preventDefault(); if (file) submit(file, description.trim(), period); }}><label className="upload-zone"><Upload/><strong>{file ? file.name : "Alegeți sau trageți fișierul aici"}</strong><span>PDF, Excel, Word, imagini sau arhive</span><input type="file" required onChange={(event) => setFile(event.target.files?.[0] ?? null)}/></label><label>Descrierea documentului *<textarea required minLength={12} value={description} onChange={(event) => setDescription(event.target.value)} placeholder={`Exemplu: ${request.title} la ${request.period}, după înregistrarea ajustărilor finale.`}/><small>Descrieți concret ce conține fișierul și perioada la care se referă.</small></label><label>Perioadă<input required value={period} onChange={(event) => setPeriod(event.target.value)}/></label><div className="notice"><ShieldCheck/>Documentul va fi asociat automat cerinței. Structura backend-ului de stocare rămâne invizibilă clientului.</div><div className="form-actions"><button type="button" className="secondary" onClick={close}>Renunță</button><button className="primary" disabled={!file || description.trim().length < 12}>Trimite auditorului</button></div></form></Modal>;
+  const [dragging, setDragging] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const folderInput = useRef<HTMLInputElement | null>(null);
+
+  const addItems = (incoming: UploadBatchItem[]) => {
+    setUploadError("");
+    setItems((current) => {
+      const merged = new Map(current.map((item) => [item.key, item]));
+      incoming.forEach((item) => merged.set(item.key, item));
+      const result = [...merged.values()];
+      if (result.length > 500) { setUploadError("Un lot poate conține maximum 500 de fișiere."); return result.slice(0, 500); }
+      return result;
+    });
+  };
+  const addFileList = (files: FileList | null) => { if (files) addItems([...files].map((file) => uploadItem(file))); };
+  const pendingItems = items.filter((item) => statuses[item.key]?.status !== "done");
+  const totalSize = items.reduce((sum, item) => sum + item.file.size, 0);
+  const formatSize = (bytes: number) => bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
+  return <Modal title="Încarcă documente" close={() => { if (!busy) close(); }}><div className="context-card"><small>Cerință</small><strong>{request.code} · {request.title}</strong></div><form onSubmit={async (event) => {
+    event.preventDefault();
+    if (!pendingItems.length) return;
+    setBusy(true); setUploadError("");
+    try {
+      await submit(pendingItems, description.trim(), period, (key, status, message) => setStatuses((current) => ({ ...current, [key]: { status, message } })));
+    } catch (reason) { setUploadError((reason as Error).message); }
+    finally { setBusy(false); }
+  }}>
+    <div className={`upload-zone ${dragging ? "dragging" : ""}`} onDragEnter={(event) => { event.preventDefault(); setDragging(true); }} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDragLeave={(event) => { event.preventDefault(); if (event.currentTarget === event.target) setDragging(false); }} onDrop={async (event) => {
+      event.preventDefault(); setDragging(false);
+      const entries = [...event.dataTransfer.items]
+        .map((item) => (item as unknown as { webkitGetAsEntry?: () => DroppedEntry | null }).webkitGetAsEntry?.() ?? null)
+        .filter((entry): entry is DroppedEntry => entry !== null);
+      try {
+        if (entries.length) addItems((await Promise.all(entries.map((entry) => filesFromEntry(entry)))).flat());
+        else addFileList(event.dataTransfer.files);
+      } catch (reason) { setUploadError(`Folderul nu a putut fi citit: ${(reason as Error).message}`); }
+    }}>
+      <Upload/><strong>{items.length ? `${items.length} fișiere selectate · ${formatSize(totalSize)}` : "Trageți aici fișiere sau foldere"}</strong><span>PDF, Excel, Word, imagini, arhive sau structuri complete de foldere</span>
+      <div className="upload-picker-actions"><button type="button" className="secondary small-button" disabled={busy} onClick={() => fileInput.current?.click()}><Files/>Alege fișiere</button><button type="button" className="secondary small-button" disabled={busy} onClick={() => folderInput.current?.click()}><Files/>Alege folder</button></div>
+      <input className="upload-picker-input" ref={fileInput} type="file" multiple onChange={(event) => { addFileList(event.currentTarget.files); event.currentTarget.value = ""; }}/>
+      <input className="upload-picker-input" ref={(element) => { folderInput.current = element; if (element) { element.setAttribute("webkitdirectory", ""); element.setAttribute("directory", ""); } }} type="file" multiple onChange={(event) => { addFileList(event.currentTarget.files); event.currentTarget.value = ""; }}/>
+    </div>
+    {!!items.length && <div className="upload-file-list">{items.map((item) => { const result = statuses[item.key] ?? { status: "pending" as const }; return <article className={result.status} key={item.key}><FileText/><div><strong>{item.relativePath}</strong><small>{formatSize(item.file.size)}{result.status === "uploading" ? " · se încarcă…" : result.status === "done" ? " · încărcat" : result.status === "error" ? ` · ${result.message}` : ""}</small></div>{result.status === "done" ? <CheckCircle2/> : result.status === "error" ? <CircleAlert/> : <button type="button" aria-label={`Elimină ${item.relativePath}`} disabled={busy} onClick={() => setItems((current) => current.filter((candidate) => candidate.key !== item.key))}><X/></button>}</article>; })}</div>}
+    <label>Descrierea documentelor *<textarea required minLength={12} value={description} onChange={(event) => setDescription(event.target.value)} placeholder={`Exemplu: ${request.title} la ${request.period}, după înregistrarea ajustărilor finale.`}/><small>Descrierea și perioada se aplică tuturor fișierelor din acest lot.</small></label><label>Perioadă<input required value={period} onChange={(event) => setPeriod(event.target.value)}/></label><div className="notice"><ShieldCheck/>Fișierele vor fi asociate automat cerinței. Pentru foldere, structura relativă este păstrată în backend.</div>{uploadError && <div className="error-box">{uploadError}</div>}<div className="form-actions"><button type="button" className="secondary" disabled={busy} onClick={close}>Renunță</button><button className="primary" disabled={busy || !pendingItems.length || description.trim().length < 12}>{busy ? `Se încarcă… (${items.length - pendingItems.length}/${items.length})` : `Trimite ${pendingItems.length || ""} ${pendingItems.length === 1 ? "fișier" : "fișiere"}`}</button></div></form></Modal>;
 }
 
 function NotApplicableModal({ close, submit }: { close: () => void; submit: (reason: string) => void }) {
