@@ -9,6 +9,14 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const required = (name: string) => { const value = Deno.env.get(name); if (!value) throw new Error(`Lipsește secretul ${name} din configurația Edge Function.`); return value; };
 const clean = (value: string) => value.replace(/[~#%&*{}\\:<>?/+|"\u0000-\u001f]/g, "-").replace(/\s+/g, " ").trim().slice(0, 120) || "Fără nume";
 const encodedPath = (value: string) => value.split("/").map((part) => part.trim()).filter(Boolean).map((part) => encodeURIComponent(clean(part))).join("/");
+const sameMicrosoftAccount = (connected: string, expected: string) => {
+  const actual = connected.trim().toLowerCase();
+  const configured = expected.trim().toLowerCase();
+  if (actual === configured) return true;
+  // Conturile personale invitate într-un tenant Entra sunt expuse de Graph ca
+  // nume_domeniu#EXT#@tenant.onmicrosoft.com, cu @ înlocuit de underscore.
+  return actual.startsWith(`${configured.replace("@", "_")}#ext#@`);
+};
 
 async function token(endpoint: string, body: URLSearchParams) {
   const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
@@ -28,7 +36,11 @@ const oneDriveToken = () => token(
 
 async function graph(accessToken: string, path: string, init: RequestInit = {}) {
   const response = await fetch(`https://graph.microsoft.com/v1.0${path}`, { ...init, headers: { Authorization: `Bearer ${accessToken}`, ...(init.headers ?? {}) } });
-  if (!response.ok) throw new Error(`Microsoft Graph ${response.status}: ${(await response.text()).slice(0, 400)}`);
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 400);
+    if (detail.includes("Tenant does not have a SPO license")) throw new Error("Tokenul OneDrive este emis pentru utilizatorul guest din tenantul organizației. Reautorizați contul ca Personal account prin endpointul Microsoft consumers și înlocuiți ONEDRIVE_REFRESH_TOKEN.");
+    throw new Error(`Microsoft Graph ${response.status}: ${detail}`);
+  }
   return response;
 }
 
@@ -87,7 +99,7 @@ Deno.serve(async (request) => {
       const accessToken = await oneDriveToken();
       const me = await (await graph(accessToken, "/me?$select=displayName,mail,userPrincipalName")).json();
       const connectedUser = String(me.mail || me.userPrincipalName || "").toLowerCase();
-      if (connectedUser && connectedUser !== expectedUser) return json({ error: `Tokenul OneDrive aparține contului ${connectedUser}, nu contului ${expectedUser}.` }, 409);
+      if (connectedUser && !sameMicrosoftAccount(connectedUser, expectedUser)) return json({ error: `Tokenul OneDrive aparține contului ${connectedUser}, nu contului ${expectedUser}.` }, 409);
       const folderPath = encodedPath(folder);
       await graph(accessToken, `/me/drive/root:/${folderPath}`);
       await verifyFile(accessToken, `/me/drive/root:/${folderPath}/${encodeURIComponent(testName)}:`);

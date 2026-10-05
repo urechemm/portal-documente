@@ -411,17 +411,17 @@ function ConnectionsSettings({ state, live, persist, testStorage, notify }: { st
     <label>Email Global Administrator<input name="global_admin_email" type="email" defaultValue={state.settings.global_admin_email} placeholder="administrator@firma.ro"/></label>
     <div className="connection-status sharepoint"><span><i/>Stocare documente</span><strong>{provider === "sharepoint" ? "SharePoint" : "OneDrive"}</strong></div>
     <label>Backend stocare<select value={provider} onChange={(event) => { setProvider(event.target.value as StorageProvider); setTestError(""); }}><option value="sharepoint">SharePoint</option><option value="onedrive">OneDrive</option></select></label>
-    {provider === "sharepoint" ? <>
+    {provider === "sharepoint" ? <div className="storage-provider-fields" key="sharepoint-fields">
       <label>SharePoint host<input name="sharepoint_host" defaultValue={state.settings.sharepoint_host} required placeholder="companie.sharepoint.com"/></label>
       <label>Cale site SharePoint<input name="sharepoint_site_path" defaultValue={state.settings.sharepoint_site_path} required placeholder="root sau sites/Audit"/></label>
       <label>Bibliotecă documente<input name="sharepoint_library" defaultValue={state.settings.sharepoint_library} required placeholder="Documente"/></label>
       <label>Utilizator Microsoft 365<input name="sharepoint_user" type="email" defaultValue={state.settings.sharepoint_user} required placeholder="utilizator@companie.ro"/></label>
       <div className="notice"><CircleAlert/>Testul verifică permisiunea aplicației Microsoft Graph asupra site-ului și bibliotecii configurate. Parolele Microsoft nu sunt salvate.</div>
-    </> : <>
+    </div> : <div className="storage-provider-fields" key="onedrive-fields">
       <label>Cont OneDrive<input name="onedrive_user" type="email" defaultValue={state.settings.onedrive_user} required placeholder="utilizator@outlook.com"/></label>
       <label>Cale folder OneDrive<input name="onedrive_folder_path" defaultValue={state.settings.onedrive_folder_path} required placeholder="Apps/Portal-Documente"/></label>
       <div className="notice"><CircleAlert/>OneDrive personal folosește autorizare Microsoft delegată. Client ID, secretul și refresh tokenul sunt păstrate exclusiv în Supabase Secrets.</div>
-    </>}
+    </div>}
     {testError && <div className="error-box">{testError}</div>}
     <div className="connection-actions"><button className="primary">Salvează conexiunile</button><button type="button" className="secondary" disabled={testing} onClick={(event) => void runTest(event.currentTarget.form!)}>{testing ? "Se testează…" : provider === "sharepoint" ? "Test SharePoint" : "Test OneDrive"}</button></div>
   </form>;

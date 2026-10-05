@@ -32,7 +32,11 @@ async function oneDriveToken() {
 
 async function graph(token: string, url: string, init: RequestInit = {}) {
   const response = await fetch(`https://graph.microsoft.com/v1.0${url}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers ?? {}) } });
-  if (!response.ok) throw new Error(`Microsoft Graph ${response.status}: ${(await response.text()).slice(0, 300)}`);
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 300);
+    if (detail.includes("Tenant does not have a SPO license")) throw new Error("Tokenul OneDrive este emis pentru utilizatorul guest din tenantul organizației. Reautorizați contul ca Personal account prin endpointul Microsoft consumers și înlocuiți ONEDRIVE_REFRESH_TOKEN.");
+    throw new Error(`Microsoft Graph ${response.status}: ${detail}`);
+  }
   return response;
 }
 

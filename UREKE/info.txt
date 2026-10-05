@@ -38,10 +38,9 @@ npx.cmd supabase functions deploy storage-test
 
 npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="..." ONEDRIVE_CLIENT_SECRET="..." ONEDRIVE_REFRESH_TOKEN="..."
 
-npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="49e4ed42-3776-473b-a7eb-de2b01611e92" ONEDRIVE_CLIENT_SECRET="Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7	" ONEDRIVE_REFRESH_TOKEN="M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHP
-                 ltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8
-                 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u
-                 1ZN28qj5WX!tL2iE4M5CQo$"
+npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="49e4ed42-3776-473b-a7eb-de2b01611e92" ONEDRIVE_CLIENT_SECRET="Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7	" ONEDRIVE_REFRESH_TOKEN="M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHPltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u1ZN28qj5WX!tL2iE4M5CQo$"
+npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="49e4ed42-3776-473b-a7eb-de2b01611e92" ONEDRIVE_CLIENT_SECRET="Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7	" ONEDRIVE_REFRESH_TOKEN="M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHPltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u1ZN28qj5WX!tL2iE4M5CQo$"
+
 
 
 ONEDRIVE_REFRESH_TOKEN : instructiuni aici: https://chatgpt.com/share/e/6ac325e1-d1b8-8002-ac1c-d9244c2b261d
@@ -93,6 +92,7 @@ refresh_token  : M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqS
                  PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u
                  1ZN28qj5WX!tL2iE4M5CQo$
 
+npx.cmd supabase functions deploy storage-test
 =======================================================================================================
 GitHub:
 https://github.com/urechemm/portal-documente/archive/d75bc359af90b3f254e52e21112a1c1466cb1b7f.zip
@@ -103,27 +103,70 @@ Micorosft Entra
 A)Entra ID Center - CELENTIS
 
 Display name: Portal Documente Backend
-Application (Client) ID:0d487919-1b9a-407b-b545-58773e3bd2c9
-Object ID:97036a8b-87d0-4893-9a16-bd067d1da277
-Directory (tenant) ID:26f35d6d-38de-4b9a-8159-dbb07cd8628f
-Supported account types:My organization only
+Application (Client) ID: 	0d487919-1b9a-407b-b545-58773e3bd2c9
+Object ID: 					97036a8b-87d0-4893-9a16-bd067d1da277
+Directory (tenant) ID: 		26f35d6d-38de-4b9a-8159-dbb07cd8628f
+Client secret ID: 			a8e6afa2-4463-4078-b71b-afdfc29e2c5e
+Client secret Value:		1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_
 
-Client credentials:
-SecretID: a8e6afa2-4463-4078-b71b-afdfc29e2c5e
-Value: 1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_
-
-B)Entra-ID cont personal
+B)Entra ID Center - urechemm@yahoo.com - cont Microsoft personal
 
 Display name: Portal-Documente
-Application (client) ID:49e4ed42-3776-473b-a7eb-de2b01611e92
-Object ID:8109a665-25de-4316-b1c5-216e6019813d
-Directory (tenant) ID:5e49785a-26a0-4b1c-98c7-a1c3b88b8d6e
-Client secret Value:Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7
-Client secret ID:58ba28ca-c8bb-4c08-bc2e-e60ac18901ba
+Application (Client) ID: 	49e4ed42-3776-473b-a7eb-de2b01611e92
+Object ID:					8109a665-25de-4316-b1c5-216e6019813d
+Directory (Tenant) ID:		5e49785a-26a0-4b1c-98c7-a1c3b88b8d6e
+Client secret Value:		Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7
+Client secret ID:			58ba28ca-c8bb-4c08-bc2e-e60ac18901ba
 
 ======================================================================================================
-Settings - sharepoint
-SharePoint host          celentis.sharepoint.com
-Cale site SharePoint     root
-Bibliotecă documente     Portal-Documente
+Microsoft Graph 
+
+GET https://graph.microsoft.com/v1.0/sites/root?$select=id,webUrl
+
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#sites(id,webUrl)/$entity",
+    "id": "celentis.sharepoint.com,8c89a8b5-a547-429d-9d04-c8779ed3ad9e,2ce67eac-d589-4dfd-a9d8-086a526e4242",
+    "webUrl": "https://celentis.sharepoint.com"
+}
+
+POST 
+https://graph.microsoft.com/v1.0/sites/celentis.sharepoint.com,8c89a8b5-a547-429d-9d04-c8779ed3ad9e,2ce67eac-d589-4dfd-a9d8-086a526e4242/permissions
+
+{
+  "roles": ["write"],
+  "grantedToIdentities": [
+    {
+      "application": {
+        "id": "0d487919-1b9a-407b-b545-58773e3bd2c9",
+        "displayName": "Portal Documente Backend"
+      }
+    }
+  ]
+}
+
+POST
+https://graph.microsoft.com/v1.0/sites/celentis.sharepoint.com,8c89a8b5-a547-429d-9d04-c8779ed3ad9e,2ce67eac-d589-4dfd-a9d8-086a526e4242/permissions
+{
+  "roles": ["write"],
+  "grantedToIdentities": [
+    {
+      "application": {
+        "id": "0d487919-1b9a-407b-b545-58773e3bd2c9",
+        "displayName": "Portal Documente Backend"
+      }
+    }
+  ]
+}
+
+======================================================================================================
+Settings - Sharepoint
+
+SharePoint host: celentis.sharepoint.com
+Cale site SharePoint: root
+Bibliotecă documente: Portal-Documente
+Utilizator Microsoft 365: mihai.ureche@celentis.ro
+
+Settings - OneDrive
+Cont OneDrive: urechemm@yahoo.com
+Cale folder OneDrive: Apps/Portal-Documente
+
 
