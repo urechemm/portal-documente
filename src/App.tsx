@@ -105,7 +105,14 @@ export default function App({ initialState, live = false, persist, reload, uploa
   function openRequest(id: string, next: ModalName = "detail") { setSelectedId(id); setModal(next); setError(""); }
   function sortBy(key: SortKey) { setSort((current) => ({ key, direction: current.key === key && current.direction === "asc" ? "desc" : "asc" })); }
   function nav(next: Page) { setPage(next); setMobileNav(false); setSearch(""); }
-  function selectEngagement(id: string) { setSelectedEngagementId(id); sessionStorage.setItem("portal-selected-engagement", id); setPage("requests"); }
+  function selectEngagement(id: string) {
+    setSelectedEngagementId(id);
+    sessionStorage.setItem("portal-selected-engagement", id);
+    setSearch("");
+    setStatusFilter("all");
+    setAreaFilter("all");
+    setPage("requests");
+  }
   function docsFor(requestId: string) { return documents.filter((item) => item.request_id === requestId); }
   function profileName(id: string) { return state.profiles.find((item) => item.id === id)?.name ?? "Utilizator"; }
   async function openBackendLocation(requestId: string, documentId?: string) {
@@ -189,7 +196,7 @@ export default function App({ initialState, live = false, persist, reload, uploa
         {page === "dashboard" && <Dashboard role={role} engagement={currentEngagement} entityName={currentEntity?.name ?? "Entitate"} requests={tenantRequests} documents={documents} actionRequests={actionRequests} openRequest={openRequest} />}
 
         {page === "requests" && <>
-          <div className="page-heading"><div><div className="eyebrow">CERINȚA ESTE OBIECTUL CENTRAL</div><h1>Liste cerințe{currentEngagement ? ` – ${currentEngagement.name}` : ""}</h1><p>Documente, descrieri, conversații și istoric — toate legate de misiunea de audit selectată.</p></div>{canCreateRequest && <div className="heading-actions"><button className="secondary" onClick={() => setModal("import")}><Upload size={17}/>Importă</button><button className="primary" onClick={() => setModal("request")}><Plus size={17}/>Cerință nouă</button></div>}</div>
+          <div className="page-heading"><div><div className="eyebrow">CERINȚA ESTE OBIECTUL CENTRAL</div><h1 className="requests-title"><span>Liste cerințe</span>{currentEngagement && <span className="engagement-title-picker"><select aria-label="Alege misiunea" value={currentEngagement.id} onChange={(event) => selectEngagement(event.target.value)}>{activeEngagements.map((engagement) => <option key={engagement.id} value={engagement.id}>{engagement.name}</option>)}</select><ChevronDown aria-hidden="true"/></span>}</h1><p>Documente, descrieri, conversații și istoric — toate legate de misiunea de audit selectată.</p></div>{canCreateRequest && <div className="heading-actions"><button className="secondary" onClick={() => setModal("import")}><Upload size={17}/>Importă</button><button className="primary" onClick={() => setModal("request")}><Plus size={17}/>Cerință nouă</button></div>}</div>
           {!currentEngagement && <div className="notice"><CircleAlert/>Creează mai întâi o misiune de audit, apoi vei putea adăuga lista de cerințe.</div>}
           <section className="toolbar"><label className="search"><Search/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Caută după cod, cerință sau arie…" /></label><label><Filter size={15}/><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">Toate statusurile</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option value="all">Toate ariile</option>{areas.map((area) => <option key={area}>{area}</option>)}</select></label><span className="result-count">{displayed.length} rezultate</span></section>
           <RequestTable requests={displayed} docsFor={docsFor} sort={sort} sortBy={sortBy} openRequest={openRequest} client={!auditUser} profileName={profileName} />
