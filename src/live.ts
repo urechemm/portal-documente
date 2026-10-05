@@ -89,7 +89,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   const baseSettings: Settings = {
     supabase_url: "", supabase_publishable_key: "", global_admin_email: "",
     storage_provider: "sharepoint", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente",
-    onedrive_user: "", onedrive_folder_path: "", digest_hour: "17:00", retention_years: 7,
+    onedrive_user: "", onedrive_folder_path: "", onedrive_account_type: "personal", onedrive_tenant_id: "consumers", digest_hour: "17:00", retention_years: 7,
   };
   const documentRows: DocumentRecord[] = (documents.data ?? []).map((item) => ({
     id: item.id, audit_firm_id: item.audit_firm_id, request_id: item.request_id,
@@ -174,6 +174,14 @@ export async function testLiveStorage(client: SupabaseClient, auditFirmId: strin
   if (error) throw new Error(await edgeFunctionError(error, "Testul conexiunii de stocare a eșuat."));
   if (data?.error) throw new Error(data.error);
   return String(data?.message ?? "Testul de scriere și citire a reușit.");
+}
+
+export async function saveLiveStorageCredential(client: SupabaseClient, auditFirmId: string, tenantId: string, refreshToken: string): Promise<void> {
+  const { data, error } = await client.functions.invoke("storage-credential", {
+    body: { audit_firm_id: auditFirmId, tenant_id: tenantId, refresh_token: refreshToken },
+  });
+  if (error) throw new Error(await edgeFunctionError(error, "Salvarea tokenului OneDrive a eșuat."));
+  if (data?.error) throw new Error(data.error);
 }
 
 export async function inviteLiveUser(client: SupabaseClient, auditFirmId: string, name: string, email: string, role: string): Promise<boolean> {

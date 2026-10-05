@@ -29,16 +29,16 @@ const sharePointToken = () => token(
   new URLSearchParams({ client_id: required("MS_CLIENT_ID"), client_secret: required("MS_CLIENT_SECRET"), scope: "https://graph.microsoft.com/.default", grant_type: "client_credentials" }),
 );
 
-const oneDriveToken = () => token(
-  `https://login.microsoftonline.com/${Deno.env.get("ONEDRIVE_TENANT_ID") || "consumers"}/oauth2/v2.0/token`,
-  new URLSearchParams({ client_id: required("ONEDRIVE_CLIENT_ID"), client_secret: required("ONEDRIVE_CLIENT_SECRET"), refresh_token: required("ONEDRIVE_REFRESH_TOKEN"), grant_type: "refresh_token", scope: "offline_access Files.ReadWrite User.Read" }),
+const oneDriveToken = (tenantId: string, refreshToken: string) => token(
+  `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+  new URLSearchParams({ client_id: required("ONEDRIVE_CLIENT_ID"), client_secret: required("ONEDRIVE_CLIENT_SECRET"), refresh_token: refreshToken, grant_type: "refresh_token", scope: "offline_access Files.ReadWrite User.Read" }),
 );
 
 async function graph(accessToken: string, path: string, init: RequestInit = {}) {
   const response = await fetch(`https://graph.microsoft.com/v1.0${path}`, { ...init, headers: { Authorization: `Bearer ${accessToken}`, ...(init.headers ?? {}) } });
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 400);
-    if (detail.includes("Tenant does not have a SPO license")) throw new Error("Tokenul OneDrive este emis pentru utilizatorul guest din tenantul organizației. Reautorizați contul ca Personal account prin endpointul Microsoft consumers și înlocuiți ONEDRIVE_REFRESH_TOKEN.");
+    if (detail.includes("Tenant does not have a SPO license")) throw new Error("Tokenul OneDrive este emis pentru utilizatorul guest din tenantul organizației. Selectați cont Personal, reautorizați prin endpointul Microsoft consumers și salvați noul refresh token în Setări.");
     throw new Error(`Microsoft Graph ${response.status}: ${detail}`);
   }
   return response;
@@ -63,6 +63,7 @@ Deno.serve(async (request) => {
     if (!authorization) return json({ error: "Autentificare necesară." }, 401);
     const supabaseUrl = required("SUPABASE_URL");
     const userClient = createClient(supabaseUrl, required("SUPABASE_ANON_KEY"), { global: { headers: { Authorization: authorization } } });
+    const adminClient = createClient(supabaseUrl, required("SUPABASE_SERVICE_ROLE_KEY"));
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData.user) return json({ error: "Sesiune invalidă." }, 401);
 
@@ -96,7 +97,13 @@ Deno.serve(async (request) => {
       const folder = String(configuration.onedrive_folder_path ?? "").trim();
       const expectedUser = String(configuration.onedrive_user ?? "").trim().toLowerCase();
       if (!expectedUser || !folder) return json({ error: "Contul și calea folderului OneDrive sunt obligatorii." }, 400);
-      const accessToken = await oneDriveToken();
+      const { data: credentialData, error: credentialError } = await adminClient.rpc("get_onedrive_credential", { p_audit_firm_id: auditFirmId });
+      if (credentialError) throw credentialError;
+      const credential = Array.isArray(credentialData) ? credentialData[0] : credentialData;
+      const tenantId = String(credential?.tenant_id ?? Deno.env.get("ONEDRIVE_TENANT_ID") ?? "consumers").trim();
+      const refreshToken = String(credential?.refresh_token ?? Deno.env.get("ONEDRIVE_REFRESH_TOKEN") ?? "").trim();
+      if (!refreshToken) return json({ error: "Introduceți refresh tokenul OneDrive în Setări și salvați conexiunea înainte de test." }, 503);
+      const accessToken = await oneDriveToken(tenantId, refreshToken);
       const me = await (await graph(accessToken, "/me?$select=displayName,mail,userPrincipalName")).json();
       const connectedUser = String(me.mail || me.userPrincipalName || "").toLowerCase();
       if (connectedUser && !sameMicrosoftAccount(connectedUser, expectedUser)) return json({ error: `Tokenul OneDrive aparține contului ${connectedUser}, nu contului ${expectedUser}.` }, 409);

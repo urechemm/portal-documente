@@ -9,6 +9,7 @@ Build-ul din `documente-upload` conține configurația publică Supabase și afi
 1. `supabase/migrations/202610030001_portal_documente.sql`
 2. `supabase/migrations/202610030002_live_operations.sql`
 3. `supabase/migrations/202610040001_require_mfa.sql`
+4. `supabase/migrations/202610050001_tenant_storage_credentials.sql`
 
 După migrare, în SQL Editor rulează o singură dată, înlocuind valorile exemplu:
 
@@ -48,25 +49,27 @@ Nu utiliza `Sites.ReadWrite.All` decât dacă accepți accesul aplicației la to
 Autentifică Supabase CLI și rulează:
 
 ```powershell
-supabase link --project-ref PROJECT_REF
-supabase secrets set MS_TENANT_ID="..." MS_CLIENT_ID="..." MS_CLIENT_SECRET="..." APP_ORIGIN="https://documente.celentis.ro"
-supabase functions deploy sharepoint-upload
-supabase functions deploy storage-test
+npx.cmd supabase link --project-ref PROJECT_REF
+npx.cmd supabase secrets set MS_TENANT_ID="..." MS_CLIENT_ID="..." MS_CLIENT_SECRET="..." APP_ORIGIN="https://documente.celentis.ro"
+npx.cmd supabase functions deploy sharepoint-upload
+npx.cmd supabase functions deploy storage-test
+npx.cmd supabase functions deploy storage-credential
 ```
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` și `SUPABASE_SERVICE_ROLE_KEY` sunt furnizate funcției de platforma Supabase. Secretul Microsoft nu se introduce în interfața web.
 
-### OneDrive personal
+### OneDrive personal sau Business
 
-Pentru OneDrive personal, înregistrează o aplicație Microsoft care acceptă și conturi Microsoft personale și acordă permisiunile delegate `Files.ReadWrite`, `User.Read` și `offline_access`. După autentificarea contului, salvează valorile exclusiv ca Supabase Secrets:
+Pentru OneDrive personal sau Business, înregistrează o aplicație Microsoft care acceptă tipurile de cont dorite și acordă permisiunile delegate `Files.ReadWrite`, `User.Read` și `offline_access`. Client ID-ul și secretul aplicației rămân valori globale în Supabase Secrets:
 
 ```powershell
-supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="..." ONEDRIVE_CLIENT_SECRET="..." ONEDRIVE_REFRESH_TOKEN="..."
-supabase functions deploy sharepoint-upload
-supabase functions deploy storage-test
+npx.cmd supabase secrets set ONEDRIVE_CLIENT_ID="..." ONEDRIVE_CLIENT_SECRET="..."
+npx.cmd supabase functions deploy storage-credential
+npx.cmd supabase functions deploy sharepoint-upload
+npx.cmd supabase functions deploy storage-test
 ```
 
-Contul și calea folderului se completează separat, per firmă de audit, în Setări → Conexiuni. Refresh tokenul și secretul aplicației nu se salvează în `app_settings` și nu ajung în browser.
+Tipul contului, adresa, calea folderului, Tenant ID-ul și refresh tokenul se completează separat, per firmă de audit, în Setări → Conexiuni. Pentru un cont personal, Tenant ID-ul este automat `consumers`; pentru Business se introduce Tenant ID-ul organizației Entra. Refresh tokenul este write-only și se păstrează criptat în Supabase Vault, nu în `app_settings`. Secretul aplicației rămâne exclusiv în Supabase Secrets.
 
 ## 5. Setările din aplicație
 

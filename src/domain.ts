@@ -125,6 +125,8 @@ export interface Settings {
   storage_provider: StorageProvider;
   onedrive_user: string;
   onedrive_folder_path: string;
+  onedrive_account_type: "personal" | "business";
+  onedrive_tenant_id: string;
   digest_hour: string;
   retention_years: number;
 }
@@ -244,7 +246,7 @@ export function createDemo(): State {
       { id: "evt-2", audit_firm_id: firm, request_id: "req-3", actor_id: auditor, action: "CLARIFICATION_REQUESTED", details: "A fost solicitat extrasul pentru contul în EUR.", created_at: "2027-01-14T09:10:00Z" },
       { id: "evt-3", audit_firm_id: firm, request_id: "req-5", actor_id: client, action: "DOCUMENT_UPLOADED", details: "Aging_clienti_2026.xlsx · versiunea 1", created_at: "2027-01-15T08:15:00Z" },
     ],
-    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", storage_provider: "sharepoint", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente", onedrive_user: "", onedrive_folder_path: "", digest_hour: "17:00", retention_years: 7 },
+    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", storage_provider: "sharepoint", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente", onedrive_user: "", onedrive_folder_path: "", onedrive_account_type: "personal", onedrive_tenant_id: "consumers", digest_hour: "17:00", retention_years: 7 },
     current_firm_id: firm,
     current_user_id: admin,
     is_global_admin: true,

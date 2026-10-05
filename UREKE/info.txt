@@ -165,8 +165,11 @@ Cale site SharePoint: root
 Bibliotecă documente: Portal-Documente
 Utilizator Microsoft 365: mihai.ureche@celentis.ro
 
-Settings - OneDrive
+Settings - OneDrive personal
 Cont OneDrive: urechemm@yahoo.com
 Cale folder OneDrive: Apps/Portal-Documente
 
+Settings - OneDrive business
+Cont OneDrive: mihai.ureche@celentis.ro
+Cale folder OneDrive: Apps/Portal-Documente
 

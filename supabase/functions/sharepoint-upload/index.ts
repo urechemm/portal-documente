@@ -20,11 +20,10 @@ async function graphToken() {
   return (await response.json()).access_token as string;
 }
 
-async function oneDriveToken() {
-  const tenant = Deno.env.get("ONEDRIVE_TENANT_ID") || "consumers";
-  const response = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+async function oneDriveToken(tenantId: string, refreshToken: string) {
+  const response = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ client_id: required("ONEDRIVE_CLIENT_ID"), client_secret: required("ONEDRIVE_CLIENT_SECRET"), refresh_token: required("ONEDRIVE_REFRESH_TOKEN"), scope: "offline_access Files.ReadWrite User.Read", grant_type: "refresh_token" }),
+    body: new URLSearchParams({ client_id: required("ONEDRIVE_CLIENT_ID"), client_secret: required("ONEDRIVE_CLIENT_SECRET"), refresh_token: refreshToken, scope: "offline_access Files.ReadWrite User.Read", grant_type: "refresh_token" }),
   });
   if (!response.ok) throw new Error(`Autentificarea OneDrive a eșuat (${response.status}): ${(await response.text()).slice(0, 300)}`);
   return (await response.json()).access_token as string;
@@ -34,7 +33,7 @@ async function graph(token: string, url: string, init: RequestInit = {}) {
   const response = await fetch(`https://graph.microsoft.com/v1.0${url}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers ?? {}) } });
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 300);
-    if (detail.includes("Tenant does not have a SPO license")) throw new Error("Tokenul OneDrive este emis pentru utilizatorul guest din tenantul organizației. Reautorizați contul ca Personal account prin endpointul Microsoft consumers și înlocuiți ONEDRIVE_REFRESH_TOKEN.");
+    if (detail.includes("Tenant does not have a SPO license")) throw new Error("Tokenul OneDrive este emis pentru utilizatorul guest din tenantul organizației. Selectați cont Personal, reautorizați prin endpointul Microsoft consumers și salvați noul refresh token în Setări.");
     throw new Error(`Microsoft Graph ${response.status}: ${detail}`);
   }
   return response;
@@ -100,7 +99,13 @@ Deno.serve(async (request) => {
     } else if (provider === "onedrive") {
       const folder = String(settings?.data?.onedrive_folder_path ?? "").trim();
       if (!folder) return json({ error: "Folderul OneDrive nu este configurat în Setări → Conexiuni." }, 503);
-      const token = await oneDriveToken();
+      const { data: credentialData, error: credentialError } = await adminClient.rpc("get_onedrive_credential", { p_audit_firm_id: pbc.audit_firm_id });
+      if (credentialError) throw credentialError;
+      const credential = Array.isArray(credentialData) ? credentialData[0] : credentialData;
+      const tenantId = String(credential?.tenant_id ?? Deno.env.get("ONEDRIVE_TENANT_ID") ?? "consumers").trim();
+      const refreshToken = String(credential?.refresh_token ?? Deno.env.get("ONEDRIVE_REFRESH_TOKEN") ?? "").trim();
+      if (!refreshToken) return json({ error: "Refresh tokenul OneDrive nu este configurat în Setări → Conexiuni." }, 503);
+      const token = await oneDriveToken(tenantId, refreshToken);
       const root = encodedPath(folder.split("/"));
       await uploadFile(token, `/me/drive/root:/${root}/${path}/${encodeURIComponent(clean(file.name))}:`, file);
       storagePath = `onedrive:${root}/${path}/${clean(file.name)}`;
