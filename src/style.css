@@ -91,7 +91,7 @@ main { padding: 29px 34px 20px; max-width: 1680px; margin: 0 auto; }
 .page-heading p { color: var(--muted); margin: 0; }
 .requests-title { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .engagement-title-picker { position: relative; display: inline-flex; align-items: center; max-width: min(520px, 60vw); }
-.engagement-title-picker select { appearance: none; width: auto; max-width: 100%; min-height: 43px; padding: 4px 40px 4px 12px; border-color: #c5dce7; border-radius: 8px; color: #0b3f64; background: #fff; font: inherit; font-weight: inherit; letter-spacing: inherit; cursor: pointer; }
+.engagement-title-picker select { appearance: none; width: auto; max-width: 100%; min-height: 43px; padding: 4px 40px 4px 12px; border-color: #c5dce7; border-radius: 8px; color: #0b3f64; background: #fff; font-family: inherit; font-size: 1.65rem; line-height: 1.2; font-weight: inherit; letter-spacing: -.035em; cursor: pointer; }
 .engagement-title-picker select:hover { border-color: #71bdd7; }
 .engagement-title-picker select:focus { outline: 3px solid #17bde13b; border-color: #11a8cf; }
 .engagement-title-picker svg { position: absolute; right: 12px; width: 18px; height: 18px; color: #39728f; pointer-events: none; }
