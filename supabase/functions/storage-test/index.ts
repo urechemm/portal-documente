@@ -24,14 +24,14 @@ async function token(endpoint: string, body: URLSearchParams) {
   return String((await response.json()).access_token ?? "");
 }
 
-const sharePointToken = () => token(
-  `https://login.microsoftonline.com/${required("MS_TENANT_ID")}/oauth2/v2.0/token`,
-  new URLSearchParams({ client_id: required("MS_CLIENT_ID"), client_secret: required("MS_CLIENT_SECRET"), scope: "https://graph.microsoft.com/.default", grant_type: "client_credentials" }),
+const sharePointToken = (tenantId: string, clientId: string, clientSecret: string) => token(
+  `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+  new URLSearchParams({ client_id: clientId, client_secret: clientSecret, scope: "https://graph.microsoft.com/.default", grant_type: "client_credentials" }),
 );
 
-const oneDriveToken = (tenantId: string, refreshToken: string) => token(
+const oneDriveToken = (tenantId: string, clientId: string, clientSecret: string, refreshToken: string) => token(
   `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
-  new URLSearchParams({ client_id: required("ONEDRIVE_CLIENT_ID"), client_secret: required("ONEDRIVE_CLIENT_SECRET"), refresh_token: refreshToken, grant_type: "refresh_token", scope: "offline_access Files.ReadWrite User.Read" }),
+  new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token", scope: "offline_access Files.ReadWrite User.Read" }),
 );
 
 async function graph(accessToken: string, path: string, init: RequestInit = {}) {
@@ -83,7 +83,14 @@ Deno.serve(async (request) => {
       const sitePath = String(configuration.sharepoint_site_path ?? "").trim().replace(/^\/+|\/+$/g, "");
       const library = String(configuration.sharepoint_library ?? "").trim();
       if (!host || !sitePath || !library) return json({ error: "Hostul, calea site-ului și biblioteca SharePoint sunt obligatorii." }, 400);
-      const accessToken = await sharePointToken();
+      const { data: credentialData, error: credentialError } = await adminClient.rpc("get_storage_provider_credential", { p_audit_firm_id: auditFirmId, p_provider: provider });
+      if (credentialError) throw credentialError;
+      const credential = Array.isArray(credentialData) ? credentialData[0] : credentialData;
+      const tenantId = String(credential?.tenant_id ?? Deno.env.get("MS_TENANT_ID") ?? "").trim();
+      const clientId = String(credential?.client_id ?? Deno.env.get("MS_CLIENT_ID") ?? "").trim();
+      const clientSecret = String(credential?.client_secret ?? Deno.env.get("MS_CLIENT_SECRET") ?? "").trim();
+      if (!tenantId || !clientId || !clientSecret) return json({ error: "Completați MS_TENANT_ID, MS_CLIENT_ID și MS_CLIENT_SECRET în Setări." }, 503);
+      const accessToken = await sharePointToken(tenantId, clientId, clientSecret);
       const siteEndpoint = sitePath.toLowerCase() === "root" ? "/sites/root" : `/sites/${host}:/${sitePath}`;
       const site = await (await graph(accessToken, siteEndpoint)).json();
       const drives = await (await graph(accessToken, `/sites/${site.id}/drives`)).json();
@@ -93,17 +100,20 @@ Deno.serve(async (request) => {
       return json({ ok: true, message: `Test SharePoint reușit: scriere, citire și ștergere în biblioteca „${library}”.` });
     }
 
-    if (provider === "onedrive") {
+    if (provider === "onedrive_personal" || provider === "onedrive_business") {
       const folder = String(configuration.onedrive_folder_path ?? "").trim();
       const expectedUser = String(configuration.onedrive_user ?? "").trim().toLowerCase();
       if (!expectedUser || !folder) return json({ error: "Contul și calea folderului OneDrive sunt obligatorii." }, 400);
-      const { data: credentialData, error: credentialError } = await adminClient.rpc("get_onedrive_credential", { p_audit_firm_id: auditFirmId });
+      const { data: credentialData, error: credentialError } = await adminClient.rpc("get_storage_provider_credential", { p_audit_firm_id: auditFirmId, p_provider: provider });
       if (credentialError) throw credentialError;
       const credential = Array.isArray(credentialData) ? credentialData[0] : credentialData;
-      const tenantId = String(credential?.tenant_id ?? Deno.env.get("ONEDRIVE_TENANT_ID") ?? "consumers").trim();
-      const refreshToken = String(credential?.refresh_token ?? Deno.env.get("ONEDRIVE_REFRESH_TOKEN") ?? "").trim();
-      if (!refreshToken) return json({ error: "Introduceți refresh tokenul OneDrive în Setări și salvați conexiunea înainte de test." }, 503);
-      const accessToken = await oneDriveToken(tenantId, refreshToken);
+      const suffix = provider === "onedrive_personal" ? "PERSONAL" : "BUSINESS";
+      const tenantId = String(credential?.tenant_id ?? Deno.env.get(`ONEDRIVE_TENANT_ID_${suffix}`) ?? Deno.env.get("ONEDRIVE_TENANT_ID") ?? "").trim();
+      const clientId = String(credential?.client_id ?? Deno.env.get(`ONEDRIVE_CLIENT_ID_${suffix}`) ?? Deno.env.get("ONEDRIVE_CLIENT_ID") ?? "").trim();
+      const clientSecret = String(credential?.client_secret ?? Deno.env.get(`ONEDRIVE_CLIENT_SECRET_${suffix}`) ?? Deno.env.get("ONEDRIVE_CLIENT_SECRET") ?? "").trim();
+      const refreshToken = String(credential?.refresh_token ?? Deno.env.get(`ONEDRIVE_REFRESH_TOKEN_${suffix}`) ?? Deno.env.get("ONEDRIVE_REFRESH_TOKEN") ?? "").trim();
+      if (!tenantId || !clientId || !clientSecret || !refreshToken) return json({ error: `Completați toate credențialele ONEDRIVE_*_${suffix} în Setări.` }, 503);
+      const accessToken = await oneDriveToken(tenantId, clientId, clientSecret, refreshToken);
       const me = await (await graph(accessToken, "/me?$select=displayName,mail,userPrincipalName")).json();
       const connectedUser = String(me.mail || me.userPrincipalName || "").toLowerCase();
       if (connectedUser && !sameMicrosoftAccount(connectedUser, expectedUser)) return json({ error: `Tokenul OneDrive aparține contului ${connectedUser}, nu contului ${expectedUser}.` }, 409);

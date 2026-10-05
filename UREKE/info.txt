@@ -38,23 +38,39 @@ npx.cmd supabase functions deploy storage-test
 
 npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="..." ONEDRIVE_CLIENT_SECRET="..." ONEDRIVE_REFRESH_TOKEN="..."
 
-npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="49e4ed42-3776-473b-a7eb-de2b01611e92" ONEDRIVE_CLIENT_SECRET="Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7	" ONEDRIVE_REFRESH_TOKEN="M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHPltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u1ZN28qj5WX!tL2iE4M5CQo$"
-npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="49e4ed42-3776-473b-a7eb-de2b01611e92" ONEDRIVE_CLIENT_SECRET="Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7	" ONEDRIVE_REFRESH_TOKEN="M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHPltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u1ZN28qj5WX!tL2iE4M5CQo$"
+npx.cmd  supabase secrets
+set ONEDRIVE_TENANT_ID="consumers" 
+ONEDRIVE_CLIENT_ID="49e4ed42-3776-473b-a7eb-de2b01611e92" 
+ONEDRIVE_CLIENT_SECRET="Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7"
+ONEDRIVE_REFRESH_TOKEN="M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHPltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u1ZN28qj5WX!tL2iE4M5CQo$"
 
-
+------------------------------------------------------------------------------------------------------------------------
 
 ONEDRIVE_REFRESH_TOKEN : instructiuni aici: https://chatgpt.com/share/e/6ac325e1-d1b8-8002-ac1c-d9244c2b261d
 
+A) OneDrive personal :
 
+Entra ID Center - urechemm@yahoo.com - cont Microsoft personal
+Display name: Portal-Documente
+Directory (Tenant) ID		5e49785a-26a0-4b1c-98c7-a1c3b88b8d6e
+Application (Client) ID 	49e4ed42-3776-473b-a7eb-de2b01611e92
+							consumers
+Object ID					8109a665-25de-4316-b1c5-216e6019813d
+Client secret Value			Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7
+Client secret ID			58ba28ca-c8bb-4c08-bc2e-e60ac18901ba
+ONEDRIVE_REFRESH_TOKEN :?
+
+1
 https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=49e4ed42-3776-473b-a7eb-de2b01611e92&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback&response_mode=query&scope=offline_access%20User.Read%20Files.ReadWrite&prompt=consent
 
+2
 http://localhost:3000/callback?code=M.C553_BAY.2.U.MsaArtifacts.DrmGMllLn1OgfYustLE8c9S4fhlqwDIBe2SOPFfd4RaXqiI0GdWr87igrsicShuATTuTyYoGsNJuiTWNe4aLbRcfF0M4PidE6fcECFqlzD8MYjeRaNepwB05j5L9XHEi0ScL8PEer2Z*WqOjOp1ycA3UQ!n0S*zmRIzZC8x!2kjPJB!rkCMf0vSv0CSLBvwI6MflrclQfREnFfOoCE1Tzuu2bRTo36OXPZgKpVh09V5p26G4n9*rr6YajhBXOsVGvuPBUjCv2EZC6ZUJ9TjBg7BB4Pu92yyDEXkypsfeIKYmfvT9PACS*tC8BZvzxw4X4BYZLWxpm1Mt*NNWZb2ygS5G8pf5lYq!CRIubyu6C8tSw*04ic8QRZz83ojZY0ZxfzvjYPGiibw4hTU1LReLXaIZHPq6H1LBYWEtkvyrOVH5e2*h*7pxDZ4J0RIoSraGJG1qspC!82R147GW38UiQJAm3jxf!P6biF!54oeowF3UrAwSCBFiD9HZovOZLb9pMxJHJy02oZDSCrIHj81PDhdZN02mcdItARhmb5E*X2SGd5Duzh7rqeq!*Y9iLHnnqA%24%24
 
+3
 PowerShell :
 
 $authorizationCode = "M.C553_BAY.2.U.MsaArtifacts.DrmGMllLn1OgfYustLE8c9S4fhlqwDIBe2SOPFfd4RaXqiI0GdWr87igrsicShuATTuTyYoGsNJuiTWNe4aLbRcfF0M4PidE6fcECFqlzD8MYjeRaNepwB05j5L9XHEi0ScL8PEer2Z*WqOjOp1ycA3UQ!n0S*zmRIzZC8x!2kjPJB!rkCMf0vSv0CSLBvwI6MflrclQfREnFfOoCE1Tzuu2bRTo36OXPZgKpVh09V5p26G4n9*rr6YajhBXOsVGvuPBUjCv2EZC6ZUJ9TjBg7BB4Pu92yyDEXkypsfeIKYmfvT9PACS*tC8BZvzxw4X4BYZLWxpm1Mt*NNWZb2ygS5G8pf5lYq!CRIubyu6C8tSw*04ic8QRZz83ojZY0ZxfzvjYPGiibw4hTU1LReLXaIZHPq6H1LBYWEtkvyrOVH5e2*h*7pxDZ4J0RIoSraGJG1qspC!82R147GW38UiQJAm3jxf!P6biF!54oeowF3UrAwSCBFiD9HZovOZLb9pMxJHJy02oZDSCrIHj81PDhdZN02mcdItARhmb5E*X2SGd5Duzh7rqeq!*Y9iLHnnqA%24%24"
 $authorizationCode = [System.Net.WebUtility]::UrlDecode($authorizationCode)
-
 $body = @{
     client_id     = "49e4ed42-3776-473b-a7eb-de2b01611e92"
     client_secret = "Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7"
@@ -63,14 +79,14 @@ $body = @{
     grant_type    = "authorization_code"
     scope         = "offline_access User.Read Files.ReadWrite"
 }
-
 $response = Invoke-RestMethod `
     -Method Post `
     -Uri "https://login.microsoftonline.com/consumers/oauth2/v2.0/token" `
     -ContentType "application/x-www-form-urlencoded" `
     -Body $body
-
 $response
+
+Result:
 
 token_type     : Bearer
 scope          : User.Read Files.ReadWrite
@@ -92,7 +108,48 @@ refresh_token  : M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqS
                  PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u
                  1ZN28qj5WX!tL2iE4M5CQo$
 
-npx.cmd supabase functions deploy storage-test
+----------------------------------------------------------------------------------------------------------------------
+B) OneDrive business
+
+Display name: Portal Documente Backend
+Directory (tenant) ID: 		26f35d6d-38de-4b9a-8159-dbb07cd8628f
+Application (Client) ID: 	0d487919-1b9a-407b-b545-58773e3bd2c9
+Object ID: 					97036a8b-87d0-4893-9a16-bd067d1da277
+Client secret ID: 			a8e6afa2-4463-4078-b71b-afdfc29e2c5e
+Client secret Value:		1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_
+ONEDRIVE_REFRESH_TOKEN : ?
+
+1
+https://login.microsoftonline.com/26f35d6d-38de-4b9a-8159-dbb07cd8628f/oauth2/v2.0/authorize?client_id=0d487919-1b9a-407b-b545-58773e3bd2c9&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback&response_mode=query&scope=offline_access%20User.Read%20Files.ReadWrite&prompt=consent
+
+2
+http://localhost:3000/callback?code=1.ATkAbV3zJt44mkuBWduwfNhijxl5SA2aG3tAtUVYdz470sngAMk5AA.BQABBAIAAAADAOz_BQD0_0V2b1N0c0FydGlmYWN0cwIAAAAAACgtodV2mB2j0XIaXUS0WtLYMlEteizWhCfU3zFBWzmzYlTmyYT77wONkeHZjlv_crySK4q8gfsFky_LxTxYn3wsdFAfIFhC6x4HZFlbjs8YRysscWxkwhD9sSkJHQIYGUc7HO2Lk5qwe7cO0mRIm_PRC_jlP8KH8gvVEilEf4JDEf842GQdwnhLiqmMjhE7gZCJvzW-3-w9-hRZQlYWKKVYWgaCT80JbdH9GchxhVCCCqKsiKEn0g9Qcd7emHC8RfeVqhxcALUsB0Ww2tFt03sWuD5D317EF9C-mOAV476gUE8H6FpSiwhuaw212nrdLF13Mr5OkJmxLAcjHRXWlc60opEifnLA4TDgtlg8Uzm_SRd096WzOhpCuFP0bUjqbmQBSSEe6-b8aN6GNaQiikHW6XpzWYWDdMSGsjCW4qnwYU725AcexVNMkndqbmeZG4MNody4q7Qfc1PSLFhskq5ocW0VMRgT2ECBaDYYxeoktDnV2gjrrVdSn3bRtfUXAFgeva_GQnYNySdDIuhUbM-LeExCk4u8fbC6r1LBlV3GWaPieIuADc4WYoY-X7TLNdSD-kkpyIaQdcQNJJmt4qW4Szy2qw0aPS2C72KnMHu89hrQi-YFAWe7U74AzDL--SwN7D27qhnlqlJ2myanA_8d4TsOHiAcsANq0UEvdQCVXiCw_jIwjwc3rHp86EZtK_hmPz3-oZGXaWO3wbjD_BVOEkEvs9nPmIMUz2SeksWhYmWLbihO5KAYnLAfN6STM4UZB_yqPqxmU-Hg77DiPRyPkXM4ahV1bx0bBceGgN9cbribiGDe1rcPzp-GEtIkFCZ7QEEhtRTTeQlpvibSiCqXa0Rvtd9FD817Xua9sll2S96hHhZkWcWxHSJij_nfQ4ugg2g2aVjdRaX8OpRzwK31IRlKLkXBhURAL4yVe5BH93904VQ1kyXoWtxhkQTwcJw1TUbTeDHxTzZYsVcGLUUSj_p3pLDezKlbIcETtZyswWtKSOVa85QrZUZ2VW-3XTX9-Iib8ezeflwRROZjKsvtG2mpy_czCWNptlwAuv3SXf_1JS45SGF0jzVPnskK_KecTld4BnJ-XIy7jdsMOlPOJLZU3St9iZ06MmsaaWVziGLhM3Gywp21g17HlFCODLmib9svf6keni0P6D3Bz7YZnZgFPjLXETUfuiquvo7NR8WShYj-lb5TKevaG-1GVB7kVa1vrrFVrCD6r3K3JdpNBlJHVYqlf0HvRh21TgtAEZhXE8CioFghra508ys5hRZGsIW1gDlDko6OQU6CzTIS3WxwLhCrWeLm8UZRjy6uokd66TUse80&session_state=002f554a-b81a-d4c5-b2d8-543c7adc0570#
+
+3
+PowerShell :
+$authorizationCode = "1.ATkAbV3zJt44mkuBWduwfNhijxl5SA2aG3tAtUVYdz470sngAMk5AA.BQABBAIAAAADAOz_BQD0_0V2b1N0c0FydGlmYWN0cwIAAAAAACgtodV2mB2j0XIaXUS0WtLYMlEteizWhCfU3zFBWzmzYlTmyYT77wONkeHZjlv_crySK4q8gfsFky_LxTxYn3wsdFAfIFhC6x4HZFlbjs8YRysscWxkwhD9sSkJHQIYGUc7HO2Lk5qwe7cO0mRIm_PRC_jlP8KH8gvVEilEf4JDEf842GQdwnhLiqmMjhE7gZCJvzW-3-w9-hRZQlYWKKVYWgaCT80JbdH9GchxhVCCCqKsiKEn0g9Qcd7emHC8RfeVqhxcALUsB0Ww2tFt03sWuD5D317EF9C-mOAV476gUE8H6FpSiwhuaw212nrdLF13Mr5OkJmxLAcjHRXWlc60opEifnLA4TDgtlg8Uzm_SRd096WzOhpCuFP0bUjqbmQBSSEe6-b8aN6GNaQiikHW6XpzWYWDdMSGsjCW4qnwYU725AcexVNMkndqbmeZG4MNody4q7Qfc1PSLFhskq5ocW0VMRgT2ECBaDYYxeoktDnV2gjrrVdSn3bRtfUXAFgeva_GQnYNySdDIuhUbM-LeExCk4u8fbC6r1LBlV3GWaPieIuADc4WYoY-X7TLNdSD-kkpyIaQdcQNJJmt4qW4Szy2qw0aPS2C72KnMHu89hrQi-YFAWe7U74AzDL--SwN7D27qhnlqlJ2myanA_8d4TsOHiAcsANq0UEvdQCVXiCw_jIwjwc3rHp86EZtK_hmPz3-oZGXaWO3wbjD_BVOEkEvs9nPmIMUz2SeksWhYmWLbihO5KAYnLAfN6STM4UZB_yqPqxmU-Hg77DiPRyPkXM4ahV1bx0bBceGgN9cbribiGDe1rcPzp-GEtIkFCZ7QEEhtRTTeQlpvibSiCqXa0Rvtd9FD817Xua9sll2S96hHhZkWcWxHSJij_nfQ4ugg2g2aVjdRaX8OpRzwK31IRlKLkXBhURAL4yVe5BH93904VQ1kyXoWtxhkQTwcJw1TUbTeDHxTzZYsVcGLUUSj_p3pLDezKlbIcETtZyswWtKSOVa85QrZUZ2VW-3XTX9-Iib8ezeflwRROZjKsvtG2mpy_czCWNptlwAuv3SXf_1JS45SGF0jzVPnskK_KecTld4BnJ-XIy7jdsMOlPOJLZU3St9iZ06MmsaaWVziGLhM3Gywp21g17HlFCODLmib9svf6keni0P6D3Bz7YZnZgFPjLXETUfuiquvo7NR8WShYj-lb5TKevaG-1GVB7kVa1vrrFVrCD6r3K3JdpNBlJHVYqlf0HvRh21TgtAEZhXE8CioFghra508ys5hRZGsIW1gDlDko6OQU6CzTIS3WxwLhCrWeLm8UZRjy6uokd66TUse80"
+$authorizationCode = [System.Net.WebUtility]::UrlDecode($authorizationCode)
+$body = @{
+    client_id     = "0d487919-1b9a-407b-b545-58773e3bd2c9"
+    client_secret = "1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_"
+	code          = $authorizationCode
+    redirect_uri  = "http://localhost:3000/callback"
+    grant_type    = "authorization_code"
+    scope         = "offline_access User.Read Files.ReadWrite"
+}
+$response = Invoke-RestMethod `
+    -Method Post `
+    -Uri "https://login.microsoftonline.com/26f35d6d-38de-4b9a-8159-dbb07cd8628f/oauth2/v2.0/token" `
+    -ContentType "application/x-www-form-urlencoded" `
+    -Body $body
+$response
+
+
+Result: 
+refresh_token
+1.ATkAbV3zJt44mkuBWduwfNhijxl5SA2aG3tAtUVYdz470sngAMk5AA.BQABAwEAAAADAOz_BQD0_0V2b1N0c0FydGlmYWN0cwIAAAAAAKgjaKdnLdYQuo8kB4GgctbZjh2Y54zCjwtlERTMvqlz1fGWXRRg_Vj9UsjGPtdmSfQIdzYO8OyuNe7H2FbPUVstL1Rac1SK33lUCn39c3bazDqMj-u_0tZ4tH7pu5OHHy5fThMpHtNtPEzcvyz5XM90Cl2CbC6iY0RQMQM-NKK1eECahPTUzpHYZR10JuwtQ0D07jmLGjmJ4ceb1mEelAEeJ5HT1Ms8r1O19XBYnSHrY94HiZc84Q87W6Lwtx1qMX_kNw-KWUOqEihMja-TyULeckYD5WB2UCTKObnzrzLC1UJvYrNaDjxRaR2XLMmpFlu4sV5xJqlyLVq6pEi6uXAFkmVNrnd6FVpfrDGw48DV1L-7jlHdDUOBrn76dlOxcn1vsX6AdiQCIUc_AK_kSK4Twp3EDcnVpPejjfEI2T90heiJ9OJkaV3IXbQ7gU4LDrlig4GalFeZrySqWoDd_3Nx8ZRg-n3bb-F7OqPsMOZgp8PpspLxt6R1-BBVDPf1pRzJAzD6-fMYwu6Zyj-0YmeWmQAURu1De-bng7T9-uSqvrA5aF7wiSFs9gY2eac_muSbQAidrrGsb_BZwj2qYZ_12qAZc31NBU5kHmo3PqIDp42p4hzuWr46_qHOictVwuXxHDvJ4akpxT_vtfQFerWEvDXBFlfaGja0qzQu4GgB_0-t13ngl7gR1RKvaLZb6080Qj_HmxZVqbUL28JplEygund6QoKjF8C4G20LQQ-y3r_BKLl8RUdJkgbqGljguID52JgPcnONMiuj4skNZQJtkA9vZ0n4Z9Kb5fkIoIV_x79OxtQfEGvcO04gz--et9hOD0QSQL9RZWOnJVACZW66cWM81d2Z2W3MRAGtEaMeJ4eJ8pYXh-EY1rXt7VWQYIZPgjFRcY1s7KhcUOKjKsQa3eABF0OrrMGKe7cn4EdPkK3FtBTYlDqAFfvBA87BQ476ZtoTdzpoO4QM3YW2Q0uinofAma0W4JUd71S8jBk9EQ_PXstdYvzk05dpUrf7hgin2YHqgiiYaUp9okCVQMrisuJe1Af25QTgb4FUIQVxssNGDtZYnEkn--Ww7aNTyZ8oXSCCwUnPuj1lNF7qYTMEBZeU9vN-Hcagbpn2V6_9Wj9pSHkf3rXuvy92nTiZ7kQR54veElRj_ixvQ1B_5u6hH1vyTxx0QbBQ2VfDW2lH0M_siA--YWB0egiaqyxZq0fKwqnDj96iD-cvrzg7AF2QFG2ACCoRwuQQiWWkI4lz8gwe9InVeNBx_VRJs7fQEYyQFRwCQT5jczHLtcxICiAlIdzwTbzt7XMODmMjhiHv66lzgbDE6om9uC4Mxa2OL_uPPtOniGmm98lqTS8b2dAhybTxfzG0HWl0jHSlS7X2m7vBOtwcpCpokk09LLDjryKUd9oqJYWpVUfjYgeIZ_9L2r_V-wj_ezXEUzAZRYdagF9j5Uv6tAp-I2tj6-E
+-----------------------------------------------------------------------------------------------------------------------
+
 =======================================================================================================
 GitHub:
 https://github.com/urechemm/portal-documente/archive/d75bc359af90b3f254e52e21112a1c1466cb1b7f.zip

@@ -24,22 +24,25 @@ Deno.serve(async (request) => {
 
     const payload = await request.json();
     const auditFirmId = String(payload.audit_firm_id ?? "").trim();
-    const tenantId = String(payload.tenant_id ?? "").trim();
-    const refreshToken = String(payload.refresh_token ?? "").trim();
-    if (!auditFirmId || !tenantId || refreshToken.length < 20)
-      return json({ error: "Firma, Tenant ID și un refresh token valid sunt obligatorii." }, 400);
+    const provider = String(payload.provider ?? "").trim();
+    const credentials = (payload.credentials ?? {}) as Record<string, unknown>;
+    if (!auditFirmId || !["sharepoint", "onedrive_personal", "onedrive_business"].includes(provider))
+      return json({ error: "Firma și backend-ul de stocare sunt obligatorii." }, 400);
 
     const [{ data: callerRole }, { data: globalAdmin }] = await Promise.all([
       userClient.rpc("firm_role", { p_firm: auditFirmId }),
       userClient.rpc("is_global_admin"),
     ]);
     if (callerRole !== "admin" && globalAdmin !== true)
-      return json({ error: "Numai administratorul firmei poate schimba credentialele OneDrive." }, 403);
+      return json({ error: "Numai administratorul firmei poate schimba credențialele de stocare." }, 403);
 
-    const { error: saveError } = await adminClient.rpc("set_onedrive_credential", {
+    const { error: saveError } = await adminClient.rpc("set_storage_provider_credential", {
       p_audit_firm_id: auditFirmId,
-      p_tenant_id: tenantId,
-      p_refresh_token: refreshToken,
+      p_provider: provider,
+      p_tenant_id: String(credentials.tenant_id ?? "").trim(),
+      p_client_id: String(credentials.client_id ?? "").trim(),
+      p_client_secret: String(credentials.client_secret ?? "").trim(),
+      p_refresh_token: String(credentials.refresh_token ?? "").trim(),
       p_updated_by: userData.user.id,
     });
     if (saveError) throw saveError;
@@ -47,13 +50,13 @@ Deno.serve(async (request) => {
     await adminClient.from("audit_events").insert({
       audit_firm_id: auditFirmId,
       actor_id: userData.user.id,
-      action: "ONEDRIVE_CREDENTIAL_UPDATED",
-      details: { message: "Credențiala OneDrive a fost înlocuită.", tenant_id: tenantId },
+      action: "STORAGE_CREDENTIAL_UPDATED",
+      details: { message: "Credențialele backend-ului de stocare au fost înlocuite.", provider },
     });
 
     return json({ ok: true });
   } catch (error) {
     console.error(error);
-    return json({ error: error instanceof Error ? error.message : "Salvarea credentialei OneDrive a eșuat." }, 500);
+    return json({ error: error instanceof Error ? error.message : "Salvarea credențialelor de stocare a eșuat." }, 500);
   }
 });

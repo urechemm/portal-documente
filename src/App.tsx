@@ -45,7 +45,7 @@ interface AppProps {
   reload?: (firm?: string | null) => Promise<State>;
   uploadLive?: (requestId: string, file: File, description: string, period: string) => Promise<void>;
   testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>;
-  saveStorageCredential?: (auditFirmId: string, tenantId: string, refreshToken: string) => Promise<void>;
+  saveStorageCredential?: (auditFirmId: string, provider: StorageProvider, credentials: Record<string, string>) => Promise<void>;
   inviteLive?: (auditFirmId: string, name: string, email: string, role: Role) => Promise<boolean>;
   logout?: () => Promise<unknown>;
 }
@@ -351,7 +351,7 @@ function TeamPage({ state, save, invite }: { state: State; save: (state: State, 
   return <><div className="page-heading"><div><div className="eyebrow">AUTORIZARE PER TENANT</div><h1>Utilizatori</h1><p>Rolul este atribuit separat în fiecare firmă de audit.</p></div><button className="primary" onClick={invite}><Plus/>Invită utilizator</button></div><section className="panel"><div className="table-wrap flat"><table><thead><tr><th>Utilizator</th><th>Email</th><th>Rol în tenant</th><th>Status</th></tr></thead><tbody>{memberships.map((membership) => { const user = state.profiles.find((item) => item.id === membership.user_id)!; return <tr key={membership.id}><td><strong>{user.name}</strong></td><td>{user.email}</td><td><select value={membership.role} onChange={(event) => { const next = mutateState(state, (draft) => { const row = draft.memberships.find((item) => item.id === membership.id); if (row) row.role = event.target.value as Role; }); save(next, "Rolul a fost actualizat."); }}><option value="admin">Administrator</option><option value="manager">Manager</option><option value="auditor">Auditor</option><option value="client">Client</option></select></td><td><span className={`badge ${membership.active ? "complete" : "neutral"}`}><i/>{membership.active ? "Activ" : "Revocat"}</span></td></tr>; })}</tbody></table></div></section></>;
 }
 
-function SettingsPage({ state, live, persist, testStorage, saveStorageCredential, notify, toggleFirm, createFirm }: { state: State; live: boolean; persist: (state: State, message: string) => Promise<void>; testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>; saveStorageCredential?: (auditFirmId: string, tenantId: string, refreshToken: string) => Promise<void>; notify: (message: string) => void; toggleFirm: (firmId: string) => Promise<void>; createFirm: () => void }) {
+function SettingsPage({ state, live, persist, testStorage, saveStorageCredential, notify, toggleFirm, createFirm }: { state: State; live: boolean; persist: (state: State, message: string) => Promise<void>; testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>; saveStorageCredential?: (auditFirmId: string, provider: StorageProvider, credentials: Record<string, string>) => Promise<void>; notify: (message: string) => void; toggleFirm: (firmId: string) => Promise<void>; createFirm: () => void }) {
   const [tab, setTab] = useState<"general" | "connections" | "tenants" | "security">("general");
   return <><div className="page-heading"><div><div className="eyebrow">DOAR ADMINISTRATOR</div><h1>Setări</h1><p>Configurația aplicației și conexiunile externe pot fi schimbate fără modificarea codului.</p></div></div><div className="settings-layout"><nav className="settings-nav"><button className={tab === "general" ? "active" : ""} onClick={() => setTab("general")}><Settings/>General</button><button className={tab === "connections" ? "active" : ""} onClick={() => setTab("connections")}><Building2/>Conexiuni</button><button className={tab === "tenants" ? "active" : ""} onClick={() => setTab("tenants")}><Users/>Multi-tenant</button><button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}><ShieldCheck/>Securitate</button></nav><section className="panel settings-panel">
     {tab === "general" && <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const next = mutateState(state, (draft) => { draft.settings.digest_hour = String(data.get("digest_hour")); draft.settings.retention_years = Number(data.get("retention_years")); }); persist(next, "Setările generale au fost salvate."); }}><h2>Preferințe operaționale</h2><p className="muted">Digestul reduce zgomotul și consolidează activitatea zilnică.</p><div className="form-grid"><label>Ora digestului<input name="digest_hour" type="time" defaultValue={state.settings.digest_hour}/></label><label>Retenție documente (ani)<input name="retention_years" type="number" min="1" max="20" defaultValue={state.settings.retention_years}/></label></div><button className="primary">Salvează</button></form>}
@@ -361,11 +361,25 @@ function SettingsPage({ state, live, persist, testStorage, saveStorageCredential
   </section></div></>;
 }
 
-function ConnectionsSettings({ state, live, persist, testStorage, saveStorageCredential, notify }: { state: State; live: boolean; persist: (state: State, message: string) => Promise<void>; testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>; saveStorageCredential?: (auditFirmId: string, tenantId: string, refreshToken: string) => Promise<void>; notify: (message: string) => void }) {
+function ConnectionsSettings({ state, live, persist, testStorage, saveStorageCredential, notify }: { state: State; live: boolean; persist: (state: State, message: string) => Promise<void>; testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>; saveStorageCredential?: (auditFirmId: string, provider: StorageProvider, credentials: Record<string, string>) => Promise<void>; notify: (message: string) => void }) {
   const [provider, setProvider] = useState<StorageProvider>(state.settings.storage_provider ?? "sharepoint");
-  const [oneDriveAccountType, setOneDriveAccountType] = useState<"personal" | "business">(state.settings.onedrive_account_type ?? "personal");
   const [testing, setTesting] = useState(false);
   const [testError, setTestError] = useState("");
+  const oneDrivePersonal = provider === "onedrive_personal";
+  const oneDriveBusiness = provider === "onedrive_business";
+  const oneDrive = oneDrivePersonal || oneDriveBusiness;
+  const providerLabel = provider === "sharepoint" ? "SharePoint" : oneDrivePersonal ? "OneDrive personal" : "OneDrive business";
+
+  const credentialsFrom = (data: FormData): Record<string, string> => provider === "sharepoint" ? {
+    tenant_id: String(data.get("MS_TENANT_ID") ?? "").trim(),
+    client_id: String(data.get("MS_CLIENT_ID") ?? "").trim(),
+    client_secret: String(data.get("MS_CLIENT_SECRET") ?? "").trim(),
+  } : {
+    tenant_id: String(data.get(oneDrivePersonal ? "ONEDRIVE_TENANT_ID_PERSONAL" : "ONEDRIVE_TENANT_ID_BUSINESS") ?? "").trim(),
+    client_id: String(data.get(oneDrivePersonal ? "ONEDRIVE_CLIENT_ID_PERSONAL" : "ONEDRIVE_CLIENT_ID_BUSINESS") ?? "").trim(),
+    client_secret: String(data.get(oneDrivePersonal ? "ONEDRIVE_CLIENT_SECRET_PERSONAL" : "ONEDRIVE_CLIENT_SECRET_BUSINESS") ?? "").trim(),
+    refresh_token: String(data.get(oneDrivePersonal ? "ONEDRIVE_REFRESH_TOKEN_PERSONAL" : "ONEDRIVE_REFRESH_TOKEN_BUSINESS") ?? "").trim(),
+  };
 
   async function runTest(form: HTMLFormElement) {
     if (!live || !testStorage) { notify("Testul conexiunii este disponibil în varianta LIVE."); return; }
@@ -379,8 +393,6 @@ function ConnectionsSettings({ state, live, persist, testStorage, saveStorageCre
         sharepoint_user: String(data.get("sharepoint_user") ?? "").trim(),
         onedrive_user: String(data.get("onedrive_user") ?? "").trim(),
         onedrive_folder_path: String(data.get("onedrive_folder_path") ?? "").trim(),
-        onedrive_account_type: oneDriveAccountType,
-        onedrive_tenant_id: oneDriveAccountType === "personal" ? "consumers" : String(data.get("onedrive_tenant_id") ?? "").trim(),
       }));
     }
     catch (reason) { setTestError((reason as Error).message); }
@@ -393,32 +405,26 @@ function ConnectionsSettings({ state, live, persist, testStorage, saveStorageCre
     const form = event.currentTarget;
     const data = new FormData(form);
     const oneDriveUser = String(data.get("onedrive_user") ?? "").trim();
-    const oneDriveTenantId = oneDriveAccountType === "personal" ? "consumers" : String(data.get("onedrive_tenant_id") ?? "").trim();
-    const oneDriveRefreshToken = String(data.get("onedrive_refresh_token") ?? "").trim();
-    if (provider === "onedrive" && oneDriveAccountType === "business" && !oneDriveTenantId) {
-      setTestError("Tenant ID Microsoft Entra este obligatoriu pentru un cont OneDrive Business.");
+    const credentials = credentialsFrom(data);
+    const credentialValues = Object.values(credentials);
+    const hasCredentials = credentialValues.some(Boolean);
+    if (hasCredentials && credentialValues.some((value) => !value)) {
+      setTestError(`Completați toate câmpurile de credențiale pentru ${providerLabel}. Câmpurile goale nu înlocuiesc valorile existente.`);
       return;
     }
-    const storedAccountType = state.settings.onedrive_account_type ?? "personal";
-    const storedTenantId = storedAccountType === "personal" ? "consumers" : state.settings.onedrive_tenant_id;
-    const oneDriveAccountChanged = provider === "onedrive" && (
-      oneDriveAccountType !== storedAccountType ||
-      oneDriveTenantId !== storedTenantId ||
-      oneDriveUser.toLowerCase() !== state.settings.onedrive_user.toLowerCase()
-    );
-    if (oneDriveAccountChanged && !oneDriveRefreshToken) {
-      setTestError("Introduceți refresh tokenul emis pentru noul cont OneDrive înainte de salvare.");
+    const storedOneDriveUser = oneDrivePersonal ? state.settings.onedrive_personal_user : state.settings.onedrive_business_user;
+    if (oneDrive && oneDriveUser.toLowerCase() !== storedOneDriveUser.toLowerCase() && !hasCredentials) {
+      setTestError(`Completați toate credențialele pentru noul cont ${providerLabel}.`);
       return;
     }
-    if (provider === "onedrive" && oneDriveRefreshToken) {
+    if (hasCredentials) {
       if (!live || !saveStorageCredential) {
-        setTestError("Tokenul OneDrive poate fi salvat numai în varianta LIVE.");
+        setTestError("Credențialele pot fi salvate numai în varianta LIVE.");
         return;
       }
       try {
-        await saveStorageCredential(state.current_firm_id, oneDriveTenantId, oneDriveRefreshToken);
-        const tokenInput = form.elements.namedItem("onedrive_refresh_token") as HTMLInputElement | null;
-        if (tokenInput) tokenInput.value = "";
+        await saveStorageCredential(state.current_firm_id, provider, credentials);
+        form.querySelectorAll<HTMLInputElement>(".credential-input").forEach((input) => { input.value = ""; });
       } catch (reason) {
         setTestError((reason as Error).message);
         return;
@@ -437,10 +443,13 @@ function ConnectionsSettings({ state, live, persist, testStorage, saveStorageCre
         draft.settings.sharepoint_site_path = String(data.get("sharepoint_site_path") ?? "").trim();
         draft.settings.sharepoint_library = String(data.get("sharepoint_library") ?? "").trim();
       } else {
-        draft.settings.onedrive_user = oneDriveUser;
-        draft.settings.onedrive_folder_path = String(data.get("onedrive_folder_path") ?? "").trim();
-        draft.settings.onedrive_account_type = oneDriveAccountType;
-        draft.settings.onedrive_tenant_id = oneDriveTenantId;
+        if (oneDrivePersonal) {
+          draft.settings.onedrive_personal_user = oneDriveUser;
+          draft.settings.onedrive_personal_folder_path = String(data.get("onedrive_folder_path") ?? "").trim();
+        } else {
+          draft.settings.onedrive_business_user = oneDriveUser;
+          draft.settings.onedrive_business_folder_path = String(data.get("onedrive_folder_path") ?? "").trim();
+        }
       }
     });
     await persist(next, live ? "Configurația conexiunilor a fost salvată." : "Configurația conexiunilor a fost salvată local.");
@@ -449,24 +458,24 @@ function ConnectionsSettings({ state, live, persist, testStorage, saveStorageCre
     <div className="connection-status"><span><i/>Supabase</span><strong>{live ? "Conectat · producție" : state.settings.supabase_url ? "Configurat" : "Neconfigurat"}</strong></div>
     {live ? <div className="notice"><ShieldCheck/>URL-ul și cheia publică Supabase sunt încărcate din configurația de deployment. Cheile private nu sunt expuse în browser.</div> : <><label>Supabase Project URL<input name="supabase_url" type="url" defaultValue={state.settings.supabase_url} placeholder="https://…supabase.co"/></label><label>Supabase publishable key<input name="supabase_publishable_key" type="password" defaultValue={state.settings.supabase_publishable_key} autoComplete="off" placeholder="sb_publishable_…"/></label></>}
     <label>Email Global Administrator<input name="global_admin_email" type="email" defaultValue={state.settings.global_admin_email} placeholder="administrator@firma.ro"/></label>
-    <div className="connection-status sharepoint"><span><i/>Stocare documente</span><strong>{provider === "sharepoint" ? "SharePoint" : "OneDrive"}</strong></div>
-    <label>Backend stocare<select value={provider} onChange={(event) => { setProvider(event.target.value as StorageProvider); setTestError(""); }}><option value="sharepoint">SharePoint</option><option value="onedrive">OneDrive</option></select></label>
+    <div className="connection-status sharepoint"><span><i/>Stocare documente</span><strong>{providerLabel}</strong></div>
+    <label>Backend stocare<select value={provider} onChange={(event) => { setProvider(event.target.value as StorageProvider); setTestError(""); }}><option value="sharepoint">SharePoint</option><option value="onedrive_personal">OneDrive personal</option><option value="onedrive_business">OneDrive business</option></select></label>
     {provider === "sharepoint" ? <div className="storage-provider-fields" key="sharepoint-fields">
       <label>SharePoint host<input name="sharepoint_host" defaultValue={state.settings.sharepoint_host} required placeholder="companie.sharepoint.com"/></label>
       <label>Cale site SharePoint<input name="sharepoint_site_path" defaultValue={state.settings.sharepoint_site_path} required placeholder="root sau sites/Audit"/></label>
       <label>Bibliotecă documente<input name="sharepoint_library" defaultValue={state.settings.sharepoint_library} required placeholder="Documente"/></label>
       <label>Utilizator Microsoft 365<input name="sharepoint_user" type="email" defaultValue={state.settings.sharepoint_user} required placeholder="utilizator@companie.ro"/></label>
-      <div className="notice"><CircleAlert/>Testul verifică permisiunea aplicației Microsoft Graph asupra site-ului și bibliotecii configurate. Parolele Microsoft nu sunt salvate.</div>
-    </div> : <div className="storage-provider-fields" key="onedrive-fields">
-      <label>Tip cont OneDrive<select value={oneDriveAccountType} onChange={(event) => { setOneDriveAccountType(event.target.value as "personal" | "business"); setTestError(""); }}><option value="personal">Personal</option><option value="business">Business / Microsoft 365</option></select></label>
-      <label>Cont OneDrive<input name="onedrive_user" type="email" defaultValue={state.settings.onedrive_user} required placeholder="utilizator@outlook.com"/></label>
-      {oneDriveAccountType === "business" && <label>Tenant ID Microsoft Entra<input name="onedrive_tenant_id" defaultValue={state.settings.onedrive_account_type === "business" ? state.settings.onedrive_tenant_id : ""} required placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/></label>}
-      <label>Cale folder OneDrive<input name="onedrive_folder_path" defaultValue={state.settings.onedrive_folder_path} required placeholder="Apps/Portal-Documente"/></label>
-      {live && <label>Refresh token OneDrive<input name="onedrive_refresh_token" type="password" autoComplete="off" placeholder="Lăsați gol pentru a păstra tokenul existent"/><small>Tokenul este transmis numai funcției backend, criptat în Supabase Vault și nu poate fi citit ulterior din acest ecran.</small></label>}
-      <div className="notice"><CircleAlert/>{oneDriveAccountType === "personal" ? "Contul personal folosește endpointul Microsoft consumers." : "Contul Business folosește Tenant ID-ul organizației Microsoft Entra."} Salvați conexiunea după schimbarea contului și înainte de test.</div>
+      {live && <><label>MS_TENANT_ID<input className="credential-input" name="MS_TENANT_ID" autoComplete="off" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label><label>MS_CLIENT_ID<input className="credential-input" name="MS_CLIENT_ID" autoComplete="off" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label><label>MS_CLIENT_SECRET<input className="credential-input" name="MS_CLIENT_SECRET" type="password" autoComplete="new-password" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label></>}
+      <div className="notice"><CircleAlert/>Credențialele sunt write-only și sunt criptate per firmă în Supabase Vault. Testul verifică accesul la site și bibliotecă.</div>
+    </div> : <div className="storage-provider-fields" key={provider}>
+      <label>Cont {providerLabel}<input name="onedrive_user" type="email" defaultValue={oneDrivePersonal ? state.settings.onedrive_personal_user : state.settings.onedrive_business_user} required placeholder={oneDrivePersonal ? "utilizator@outlook.com" : "utilizator@companie.ro"}/></label>
+      <label>Cale folder {providerLabel}<input name="onedrive_folder_path" defaultValue={oneDrivePersonal ? state.settings.onedrive_personal_folder_path : state.settings.onedrive_business_folder_path} required placeholder="Apps/Portal-Documente"/></label>
+      {live && oneDrivePersonal && <><label>ONEDRIVE_TENANT_ID_PERSONAL<input className="credential-input" name="ONEDRIVE_TENANT_ID_PERSONAL" autoComplete="off" placeholder="consumers"/></label><label>ONEDRIVE_CLIENT_ID_PERSONAL<input className="credential-input" name="ONEDRIVE_CLIENT_ID_PERSONAL" autoComplete="off" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label><label>ONEDRIVE_CLIENT_SECRET_PERSONAL<input className="credential-input" name="ONEDRIVE_CLIENT_SECRET_PERSONAL" type="password" autoComplete="new-password" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label><label>ONEDRIVE_REFRESH_TOKEN_PERSONAL<input className="credential-input" name="ONEDRIVE_REFRESH_TOKEN_PERSONAL" type="password" autoComplete="new-password" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label></>}
+      {live && oneDriveBusiness && <><label>ONEDRIVE_TENANT_ID_BUSINESS<input className="credential-input" name="ONEDRIVE_TENANT_ID_BUSINESS" autoComplete="off" placeholder="Tenant ID Microsoft Entra"/></label><label>ONEDRIVE_CLIENT_ID_BUSINESS<input className="credential-input" name="ONEDRIVE_CLIENT_ID_BUSINESS" autoComplete="off" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label><label>ONEDRIVE_CLIENT_SECRET_BUSINESS<input className="credential-input" name="ONEDRIVE_CLIENT_SECRET_BUSINESS" type="password" autoComplete="new-password" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label><label>ONEDRIVE_REFRESH_TOKEN_BUSINESS<input className="credential-input" name="ONEDRIVE_REFRESH_TOKEN_BUSINESS" type="password" autoComplete="new-password" placeholder="Lăsați gol pentru a păstra valoarea existentă"/></label></>}
+      <div className="notice"><CircleAlert/>Credențialele sunt write-only și sunt criptate per firmă în Supabase Vault. Toate câmpurile se completează împreună numai la configurare sau înlocuire.</div>
     </div>}
     {testError && <div className="error-box">{testError}</div>}
-    <div className="connection-actions"><button className="primary">Salvează conexiunile</button><button type="button" className="secondary" disabled={testing} onClick={(event) => void runTest(event.currentTarget.form!)}>{testing ? "Se testează…" : provider === "sharepoint" ? "Test SharePoint" : "Test OneDrive"}</button></div>
+    <div className="connection-actions"><button className="primary">Salvează conexiunile</button><button type="button" className="secondary" disabled={testing} onClick={(event) => void runTest(event.currentTarget.form!)}>{testing ? "Se testează…" : `Test ${providerLabel}`}</button></div>
   </form>;
 }
 

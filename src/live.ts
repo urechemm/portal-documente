@@ -89,8 +89,25 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   const baseSettings: Settings = {
     supabase_url: "", supabase_publishable_key: "", global_admin_email: "",
     storage_provider: "sharepoint", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente",
-    onedrive_user: "", onedrive_folder_path: "", onedrive_account_type: "personal", onedrive_tenant_id: "consumers", digest_hour: "17:00", retention_years: 7,
+    onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7,
   };
+  const savedSettings = (settings.data?.data ?? {}) as Record<string, unknown>;
+  const legacyOneDriveType = savedSettings.onedrive_account_type === "business" ? "business" : "personal";
+  const normalizedProvider: StorageProvider = savedSettings.storage_provider === "onedrive"
+    ? `onedrive_${legacyOneDriveType}`
+    : (["sharepoint", "onedrive_personal", "onedrive_business"].includes(String(savedSettings.storage_provider))
+      ? savedSettings.storage_provider as StorageProvider
+      : "sharepoint");
+  const normalizedSettings = { ...baseSettings, ...savedSettings, storage_provider: normalizedProvider } as Settings;
+  if (savedSettings.storage_provider === "onedrive") {
+    if (legacyOneDriveType === "personal") {
+      normalizedSettings.onedrive_personal_user = String(savedSettings.onedrive_user ?? "");
+      normalizedSettings.onedrive_personal_folder_path = String(savedSettings.onedrive_folder_path ?? "");
+    } else {
+      normalizedSettings.onedrive_business_user = String(savedSettings.onedrive_user ?? "");
+      normalizedSettings.onedrive_business_folder_path = String(savedSettings.onedrive_folder_path ?? "");
+    }
+  }
   const documentRows: DocumentRecord[] = (documents.data ?? []).map((item) => ({
     id: item.id, audit_firm_id: item.audit_firm_id, request_id: item.request_id,
     name: item.name, description: item.description, period: item.period,
@@ -103,7 +120,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
     entities: entities.data ?? [], engagements: engagements.data ?? [], engagement_users: engagementUsers.data ?? [], requests: requests.data ?? [],
     documents: documentRows, comments: comments.data ?? [],
     events: (events.data ?? []).map((item) => ({ ...item, details: typeof item.details === "string" ? item.details : String(item.details?.message ?? item.action) })),
-    settings: { ...baseSettings, ...(settings.data?.data ?? {}) },
+    settings: normalizedSettings,
     current_firm_id: firmId, current_user_id: user.id, is_global_admin: !!adminResult.data,
   } as State;
 }
@@ -176,11 +193,11 @@ export async function testLiveStorage(client: SupabaseClient, auditFirmId: strin
   return String(data?.message ?? "Testul de scriere și citire a reușit.");
 }
 
-export async function saveLiveStorageCredential(client: SupabaseClient, auditFirmId: string, tenantId: string, refreshToken: string): Promise<void> {
+export async function saveLiveStorageCredential(client: SupabaseClient, auditFirmId: string, provider: StorageProvider, credentials: Record<string, string>): Promise<void> {
   const { data, error } = await client.functions.invoke("storage-credential", {
-    body: { audit_firm_id: auditFirmId, tenant_id: tenantId, refresh_token: refreshToken },
+    body: { audit_firm_id: auditFirmId, provider, credentials },
   });
-  if (error) throw new Error(await edgeFunctionError(error, "Salvarea tokenului OneDrive a eșuat."));
+  if (error) throw new Error(await edgeFunctionError(error, "Salvarea credențialelor de stocare a eșuat."));
   if (data?.error) throw new Error(data.error);
 }
 
