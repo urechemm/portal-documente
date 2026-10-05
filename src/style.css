@@ -229,6 +229,10 @@ label small { color: var(--muted); font-weight: 400; }
 .modal > header { position: sticky; top: -24px; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: -5px 0 20px; padding: 10px 0 14px; border-bottom: 1px solid var(--line); background: #fff; }
 .modal > header .eyebrow { margin: 0 0 6px; }
 .modal > header h2 { margin: 0; }
+.storage-title-link, .storage-file-link { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
+.storage-title-link:hover, .storage-file-link:hover { color: #0878a9; border-bottom-color: currentColor; }
+.storage-title-link:focus-visible, .storage-file-link:focus-visible { outline: 2px solid #19a8d3; outline-offset: 3px; border-radius: 2px; }
+.storage-file-link { display: inline; font-weight: 700; }
 .form-actions, .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; padding-top: 17px; border-top: 1px solid var(--line); }
 .modal-actions { justify-content: space-between; }
 .context-card { padding: 13px 15px; border-left: 3px solid var(--cyan); border-radius: 0 8px 8px 0; background: #eef9fc; }

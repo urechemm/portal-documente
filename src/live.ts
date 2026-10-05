@@ -185,6 +185,16 @@ export async function uploadLiveDocument(client: SupabaseClient, requestId: stri
   if (data?.error) throw new Error(data.error);
 }
 
+export async function getLiveStorageLink(client: SupabaseClient, requestId: string, documentId?: string): Promise<string> {
+  const { data, error } = await client.functions.invoke("storage-link", {
+    body: { request_id: requestId, document_id: documentId ?? null },
+  });
+  if (error) throw new Error(await edgeFunctionError(error, "Locația din backend nu a putut fi deschisă."));
+  if (data?.error) throw new Error(data.error);
+  if (!data?.url) throw new Error("Backend-ul nu a returnat o adresă validă.");
+  return String(data.url);
+}
+
 export async function testLiveStorage(client: SupabaseClient, auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>): Promise<string> {
   const { data, error } = await client.functions.invoke("storage-test", {
     body: { audit_firm_id: auditFirmId, provider, configuration },

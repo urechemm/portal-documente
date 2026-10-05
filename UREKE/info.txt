@@ -57,9 +57,7 @@ Directory (Tenant) ID		5e49785a-26a0-4b1c-98c7-a1c3b88b8d6e
 Application (Client) ID 	49e4ed42-3776-473b-a7eb-de2b01611e92
 							consumers
 Client secret Value			Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7							
-Object ID					8109a665-25de-4316-b1c5-216e6019813d
 
-Client secret ID			58ba28ca-c8bb-4c08-bc2e-e60ac18901ba
 ONEDRIVE_REFRESH_TOKEN :?
 
 1
@@ -113,11 +111,46 @@ refresh_token  : M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqS
 ----------------------------------------------------------------------------------------------------------------------
 B) OneDrive business
 
+1. Creează aplicația Microsoft in Entra ID
+Intră în Microsoft Entra admin center → App registrations → New registration.
+La Supported account types, alege opțiunea care include:
+Accounts in any organizational directory and personal Microsoft accounts
+
+După creare, copiază:
+- Application (client) ID → ONEDRIVE_CLIENT_ID
+- pentru OneDrive personal vei folosi consumers ca tenant → ONEDRIVE_TENANT_ID=consumers
+Microsoft folosește explicit endpointul consumers pentru autentificarea conturilor Microsoft personale. Microsoft Learn
+
+2. Configurează Redirect URI
+În:
+App registrations → aplicația ta → Authentication → Add a platform → Web
+poți pune, de exemplu:
+http://localhost:3000/callback
+Trebuie să folosești exact aceeași adresă când obții authorization code-ul.
+
+3. Creează Client Secret
+Mergi la:
+Certificates & secrets → Client secrets → New client secret
+Copiază imediat valoarea din coloana Value.
+Aceasta devine:
+ONEDRIVE_CLIENT_SECRET
+
+Secretul este necesar atunci când aplicația web schimbă authorization code-ul cu tokenurile OAuth. Microsoft Learn
+
+4. Adaugă permisiunile Graph
+În:
+API permissions → Add a permission → Microsoft Graph → Delegated permissions
+adaugă:
+Files.ReadWrite
+User.Read
+offline_access
+
+Files.ReadWrite permite aplicației să citească, creeze, modifice și șteargă fișierele utilizatorului autentificat. Pentru conturile Microsoft personale poate accesa și fișierele partajate cu acel utilizator. Microsoft Learn
+
+
 Display name: Portal Documente Backend
 Directory (tenant) ID: 		26f35d6d-38de-4b9a-8159-dbb07cd8628f
 Application (Client) ID: 	0d487919-1b9a-407b-b545-58773e3bd2c9
-Object ID: 					97036a8b-87d0-4893-9a16-bd067d1da277
-Client secret ID: 			a8e6afa2-4463-4078-b71b-afdfc29e2c5e
 Client secret Value:		1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_
 ONEDRIVE_REFRESH_TOKEN : ?
 
@@ -150,7 +183,6 @@ $response
 Result: 
 refresh_token
 1.ATkAbV3zJt44mkuBWduwfNhijxl5SA2aG3tAtUVYdz470sngAMk5AA.BQABAwEAAAADAOz_BQD0_0V2b1N0c0FydGlmYWN0cwIAAAAAAKgjaKdnLdYQuo8kB4GgctbZjh2Y54zCjwtlERTMvqlz1fGWXRRg_Vj9UsjGPtdmSfQIdzYO8OyuNe7H2FbPUVstL1Rac1SK33lUCn39c3bazDqMj-u_0tZ4tH7pu5OHHy5fThMpHtNtPEzcvyz5XM90Cl2CbC6iY0RQMQM-NKK1eECahPTUzpHYZR10JuwtQ0D07jmLGjmJ4ceb1mEelAEeJ5HT1Ms8r1O19XBYnSHrY94HiZc84Q87W6Lwtx1qMX_kNw-KWUOqEihMja-TyULeckYD5WB2UCTKObnzrzLC1UJvYrNaDjxRaR2XLMmpFlu4sV5xJqlyLVq6pEi6uXAFkmVNrnd6FVpfrDGw48DV1L-7jlHdDUOBrn76dlOxcn1vsX6AdiQCIUc_AK_kSK4Twp3EDcnVpPejjfEI2T90heiJ9OJkaV3IXbQ7gU4LDrlig4GalFeZrySqWoDd_3Nx8ZRg-n3bb-F7OqPsMOZgp8PpspLxt6R1-BBVDPf1pRzJAzD6-fMYwu6Zyj-0YmeWmQAURu1De-bng7T9-uSqvrA5aF7wiSFs9gY2eac_muSbQAidrrGsb_BZwj2qYZ_12qAZc31NBU5kHmo3PqIDp42p4hzuWr46_qHOictVwuXxHDvJ4akpxT_vtfQFerWEvDXBFlfaGja0qzQu4GgB_0-t13ngl7gR1RKvaLZb6080Qj_HmxZVqbUL28JplEygund6QoKjF8C4G20LQQ-y3r_BKLl8RUdJkgbqGljguID52JgPcnONMiuj4skNZQJtkA9vZ0n4Z9Kb5fkIoIV_x79OxtQfEGvcO04gz--et9hOD0QSQL9RZWOnJVACZW66cWM81d2Z2W3MRAGtEaMeJ4eJ8pYXh-EY1rXt7VWQYIZPgjFRcY1s7KhcUOKjKsQa3eABF0OrrMGKe7cn4EdPkK3FtBTYlDqAFfvBA87BQ476ZtoTdzpoO4QM3YW2Q0uinofAma0W4JUd71S8jBk9EQ_PXstdYvzk05dpUrf7hgin2YHqgiiYaUp9okCVQMrisuJe1Af25QTgb4FUIQVxssNGDtZYnEkn--Ww7aNTyZ8oXSCCwUnPuj1lNF7qYTMEBZeU9vN-Hcagbpn2V6_9Wj9pSHkf3rXuvy92nTiZ7kQR54veElRj_ixvQ1B_5u6hH1vyTxx0QbBQ2VfDW2lH0M_siA--YWB0egiaqyxZq0fKwqnDj96iD-cvrzg7AF2QFG2ACCoRwuQQiWWkI4lz8gwe9InVeNBx_VRJs7fQEYyQFRwCQT5jczHLtcxICiAlIdzwTbzt7XMODmMjhiHv66lzgbDE6om9uC4Mxa2OL_uPPtOniGmm98lqTS8b2dAhybTxfzG0HWl0jHSlS7X2m7vBOtwcpCpokk09LLDjryKUd9oqJYWpVUfjYgeIZ_9L2r_V-wj_ezXEUzAZRYdagF9j5Uv6tAp-I2tj6-E
------------------------------------------------------------------------------------------------------------------------
 
 =======================================================================================================
 GitHub:

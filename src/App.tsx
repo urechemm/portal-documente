@@ -21,9 +21,9 @@ const statusTone: Record<RequestStatus, string> = {
   clarification: "clarification", complete: "complete", not_applicable: "neutral",
 };
 
-function Modal({ title, close, children, wide = false }: { title: string; close: () => void; children: ReactNode; wide?: boolean }) {
+function Modal({ title, close, children, wide = false }: { title: ReactNode; close: () => void; children: ReactNode; wide?: boolean }) {
   return <div className="overlay" onMouseDown={(event) => event.target === event.currentTarget && close()}>
-    <section className={`modal ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
+    <section className={`modal ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : "Dialog"}>
       <header><div><div className="eyebrow">PORTAL DOCUMENTE</div><h2>{title}</h2></div><button className="icon-button" onClick={close} aria-label="Închide"><X /></button></header>
       {children}
     </section>
@@ -44,13 +44,14 @@ interface AppProps {
   persist?: (before: State, after: State) => Promise<State>;
   reload?: (firm?: string | null) => Promise<State>;
   uploadLive?: (requestId: string, file: File, description: string, period: string, relativePath?: string) => Promise<void>;
+  openStorageLink?: (requestId: string, documentId?: string) => Promise<string>;
   testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>;
   saveStorageCredential?: (auditFirmId: string, provider: StorageProvider, credentials: Record<string, string>) => Promise<void>;
   inviteLive?: (auditFirmId: string, name: string, email: string, role: Role) => Promise<boolean>;
   logout?: () => Promise<unknown>;
 }
 
-export default function App({ initialState, live = false, persist, reload, uploadLive, testStorage, saveStorageCredential, inviteLive, logout }: AppProps = {}) {
+export default function App({ initialState, live = false, persist, reload, uploadLive, openStorageLink, testStorage, saveStorageCredential, inviteLive, logout }: AppProps = {}) {
   const [state, setState] = useState<State>(() => initialState ?? readState());
   const [page, setPage] = useState<Page>("dashboard");
   const [modal, setModal] = useState<ModalName>(null);
@@ -107,6 +108,17 @@ export default function App({ initialState, live = false, persist, reload, uploa
   function selectEngagement(id: string) { setSelectedEngagementId(id); sessionStorage.setItem("portal-selected-engagement", id); setPage("requests"); }
   function docsFor(requestId: string) { return documents.filter((item) => item.request_id === requestId); }
   function profileName(id: string) { return state.profiles.find((item) => item.id === id)?.name ?? "Utilizator"; }
+  async function openBackendLocation(requestId: string, documentId?: string) {
+    if (!live || !openStorageLink) { notify("Linkurile către backend sunt disponibile în varianta LIVE."); return; }
+    const tab = window.open("about:blank", "_blank");
+    if (!tab) { setError("Browserul a blocat fereastra nouă. Permiteți pop-up-urile pentru acest site."); return; }
+    tab.opener = null;
+    try {
+      tab.document.title = "Se deschide locația…";
+      tab.document.body.textContent = "Se deschide locația din backend…";
+      tab.location.replace(await openStorageLink(requestId, documentId));
+    } catch (reason) { tab.close(); setError((reason as Error).message); }
+  }
   async function save(next: State, message: string) {
     setError("");
     try {
@@ -197,7 +209,7 @@ export default function App({ initialState, live = false, persist, reload, uploa
       <footer className="page-footer"><span>Portal Documente · MVP</span><span><ShieldCheck size={14}/>Segregare multi-tenant · jurnalizare activă</span></footer>
     </section>
 
-    {modal === "detail" && selected && <RequestDetail request={selected} documents={docsFor(selected.id)} comments={comments.filter((item) => item.request_id === selected.id)} profileName={profileName} auditUser={auditUser} close={() => setModal(null)} upload={() => setModal("upload")} notApplicable={() => setModal("not-applicable")} updateStatus={(status) => save(updateRequestStatus(state, selected.id, status), `Cerința este acum „${statusLabels[status]}”.`)} addMessage={(body) => save(addComment(state, selected.id, body), "Mesajul a fost adăugat.")} />}
+    {modal === "detail" && selected && <RequestDetail request={selected} documents={docsFor(selected.id)} comments={comments.filter((item) => item.request_id === selected.id)} profileName={profileName} auditUser={auditUser} openFolder={live && openStorageLink ? () => void openBackendLocation(selected.id) : undefined} openDocument={live && openStorageLink ? (documentId) => void openBackendLocation(selected.id, documentId) : undefined} close={() => setModal(null)} upload={() => setModal("upload")} notApplicable={() => setModal("not-applicable")} updateStatus={(status) => save(updateRequestStatus(state, selected.id, status), `Cerința este acum „${statusLabels[status]}”.`)} addMessage={(body) => save(addComment(state, selected.id, body), "Mesajul a fost adăugat.")} />}
     {modal === "upload" && selected && <UploadModal request={selected} close={() => setModal(null)} submit={async (items, description, period, report) => {
       const failures: string[] = [];
       if (live && uploadLive && reload) {
@@ -249,10 +261,11 @@ function RequestTable({ requests, docsFor, sort, sortBy, openRequest, client, pr
   return <div className="table-wrap"><table><thead><tr><th><SortButton label="Cod" name="code" active={sort.key === "code"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Cerință auditor" name="title" active={sort.key === "title"} direction={sort.direction} onSort={sortBy}/></th><th>Asignat către</th><th><SortButton label="Arie" name="area" active={sort.key === "area"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Perioadă" name="period" active={sort.key === "period"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Termen" name="deadline" active={sort.key === "deadline"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Status" name="status" active={sort.key === "status"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Documente" name="documents" active={sort.key === "documents"} direction={sort.direction} onSort={sortBy}/></th><th>Acțiune</th></tr></thead><tbody>{requests.map((request) => { const count = docsFor(request.id).length; const upload = client && ["draft", "requested"].includes(request.status); return <tr key={request.id}><td><span className="code">{request.code}</span>{request.priority === "urgent" && <small className="urgent">Urgent</small>}</td><td><button className="cell-link" onClick={() => openRequest(request.id)}>{request.title}</button><small>{request.description}</small></td><td><strong>{profileName(request.client_owner_id)}</strong></td><td>{request.area}</td><td>{request.period}</td><td className={request.deadline < today() && !["complete", "not_applicable"].includes(request.status) ? "overdue" : ""}>{formatDate(request.deadline)}</td><td><StatusBadge status={request.status}/></td><td><span className="document-count"><FileText/>{count || "—"}</span></td><td><button className={upload ? "primary small-button" : "secondary small-button"} onClick={() => openRequest(request.id, upload ? "upload" : "detail")}>{upload ? "Încarcă" : request.status === "clarification" && client ? "Răspunde" : "Vezi"}</button></td></tr>; })}</tbody></table>{!requests.length && <Empty title="Nicio cerință găsită" text="Modifică filtrele sau adaugă o cerință nouă."/>}</div>;
 }
 
-function RequestDetail({ request, documents, comments, profileName, auditUser, close, upload, notApplicable, updateStatus, addMessage }: { request: PbcRequest; documents: State["documents"]; comments: State["comments"]; profileName: (id: string) => string; auditUser: boolean; close: () => void; upload: () => void; notApplicable: () => void; updateStatus: (status: RequestStatus) => void; addMessage: (body: string) => void }) {
+function RequestDetail({ request, documents, comments, profileName, auditUser, openFolder, openDocument, close, upload, notApplicable, updateStatus, addMessage }: { request: PbcRequest; documents: State["documents"]; comments: State["comments"]; profileName: (id: string) => string; auditUser: boolean; openFolder?: () => void; openDocument?: (documentId: string) => void; close: () => void; upload: () => void; notApplicable: () => void; updateStatus: (status: RequestStatus) => void; addMessage: (body: string) => void }) {
   const [message, setMessage] = useState("");
-  return <Modal title={`${request.code} · ${request.title}`} close={close} wide><div className="detail-summary"><span><small>Arie</small>{request.area}</span><span><small>Perioadă</small>{request.period}</span><span><small>Deadline</small>{formatDate(request.deadline)}</span><span><small>Status</small><StatusBadge status={request.status}/></span></div><section className="request-brief"><h3>Ce solicită auditorul</h3><p>{request.description}</p><div className="instruction"><CircleAlert/><span><strong>Instrucțiuni</strong>{request.instructions}</span></div>{request.status === "not_applicable" && <div className="na-reason"><strong>Explicație „Nu se aplică”</strong><p>{request.not_applicable_reason}</p></div>}</section>
-    <div className="detail-columns"><section><div className="section-heading"><h3>Documente <span>{documents.length}</span></h3><button className="secondary small-button" onClick={upload}><Upload/>Încarcă</button></div>{documents.map((document) => <article className="document-card" key={document.id}><div className="file-icon"><FileText/></div><div><strong>{document.name}</strong><p>{document.description}</p><small>{profileName(document.uploaded_by)} · {formatDateTime(document.uploaded_at)} · v{document.version}</small>{document.auditor_comment && <em>{document.auditor_comment}</em>}</div><span className={`doc-status ${document.status}`}>{document.status === "new" ? "Nou" : document.status === "accepted" ? "Acceptat" : "De înlocuit"}</span></article>)}{!documents.length && <Empty title="Niciun document" text="Fișierele încărcate vor apărea aici."/>}</section>
+  const title = openFolder ? <a className="storage-title-link" href="#" title="Deschide dosarul cerinței în backend" onClick={(event) => { event.preventDefault(); openFolder(); }}>{request.code} · {request.title}</a> : `${request.code} · ${request.title}`;
+  return <Modal title={title} close={close} wide><div className="detail-summary"><span><small>Arie</small>{request.area}</span><span><small>Perioadă</small>{request.period}</span><span><small>Deadline</small>{formatDate(request.deadline)}</span><span><small>Status</small><StatusBadge status={request.status}/></span></div><section className="request-brief"><h3>Ce solicită auditorul</h3><p>{request.description}</p><div className="instruction"><CircleAlert/><span><strong>Instrucțiuni</strong>{request.instructions}</span></div>{request.status === "not_applicable" && <div className="na-reason"><strong>Explicație „Nu se aplică”</strong><p>{request.not_applicable_reason}</p></div>}</section>
+    <div className="detail-columns"><section><div className="section-heading"><h3>Documente <span>{documents.length}</span></h3><button className="secondary small-button" onClick={upload}><Upload/>Încarcă</button></div>{documents.map((document) => <article className="document-card" key={document.id}><div className="file-icon"><FileText/></div><div>{openDocument ? <a className="storage-file-link" href="#" title="Deschide fișierul în backend" onClick={(event) => { event.preventDefault(); openDocument(document.id); }}>{document.name}</a> : <strong>{document.name}</strong>}<p>{document.description}</p><small>{profileName(document.uploaded_by)} · {formatDateTime(document.uploaded_at)} · v{document.version}</small>{document.auditor_comment && <em>{document.auditor_comment}</em>}</div><span className={`doc-status ${document.status}`}>{document.status === "new" ? "Nou" : document.status === "accepted" ? "Acceptat" : "De înlocuit"}</span></article>)}{!documents.length && <Empty title="Niciun document" text="Fișierele încărcate vor apărea aici."/>}</section>
       <section><h3>Conversație <span>{comments.length}</span></h3><div className="thread">{comments.map((comment) => <article key={comment.id}><span className="mini-avatar">{profileName(comment.author_id).slice(0, 1)}</span><div><strong>{profileName(comment.author_id)}</strong><small>{formatDateTime(comment.created_at)}</small><p>{comment.body}</p></div></article>)}{!comments.length && <p className="muted">Nu există mesaje.</p>}</div><form className="comment-form" onSubmit={(event) => { event.preventDefault(); if (!message.trim()) return; addMessage(message.trim()); setMessage(""); }}><textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Scrie un mesaj legat de această cerință…" required/><button className="primary">Trimite mesajul</button></form></section></div>
     <footer className="modal-actions"><div>{!auditUser && request.status !== "not_applicable" && <button className="text-button" onClick={notApplicable}>Marchează „Nu se aplică”</button>}</div><div>{auditUser && <><button className="secondary" onClick={() => updateStatus("clarification")}>Solicită clarificări</button><button className="secondary" onClick={() => updateStatus("review")}>În revizuire</button><button className="primary" onClick={() => updateStatus("complete")}><Check/>Marchează complet</button></>}</div></footer>
   </Modal>;

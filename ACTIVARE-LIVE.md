@@ -56,6 +56,7 @@ npx.cmd supabase secrets set APP_ORIGIN="https://documente.celentis.ro"
 npx.cmd supabase functions deploy sharepoint-upload
 npx.cmd supabase functions deploy storage-test
 npx.cmd supabase functions deploy storage-credential
+npx.cmd supabase functions deploy storage-link
 ```
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` și `SUPABASE_SERVICE_ROLE_KEY` sunt furnizate funcției de platforma Supabase. Credențialele Microsoft se introduc write-only în Setări și sunt criptate per firmă în Supabase Vault.

@@ -149,7 +149,7 @@ Deno.serve(async (request) => {
       const nestedPath = encodedPath(relativeFolders);
       const destination = [root, path, nestedPath, encodeURIComponent(safeFileName)].filter(Boolean).join("/");
       await uploadFile(token, `/me/drive/root:/${destination}:`, file);
-      storagePath = `onedrive:${destination}`;
+      storagePath = `${provider}:${destination}`;
     } else {
       return json({ error: "Backend-ul de stocare selectat nu este valid." }, 400);
     }
