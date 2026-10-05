@@ -20,14 +20,23 @@ async function graphToken() {
   return (await response.json()).access_token as string;
 }
 
+async function oneDriveToken() {
+  const tenant = Deno.env.get("ONEDRIVE_TENANT_ID") || "consumers";
+  const response = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: required("ONEDRIVE_CLIENT_ID"), client_secret: required("ONEDRIVE_CLIENT_SECRET"), refresh_token: required("ONEDRIVE_REFRESH_TOKEN"), scope: "offline_access Files.ReadWrite User.Read", grant_type: "refresh_token" }),
+  });
+  if (!response.ok) throw new Error(`Autentificarea OneDrive a eșuat (${response.status}): ${(await response.text()).slice(0, 300)}`);
+  return (await response.json()).access_token as string;
+}
+
 async function graph(token: string, url: string, init: RequestInit = {}) {
   const response = await fetch(`https://graph.microsoft.com/v1.0${url}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers ?? {}) } });
   if (!response.ok) throw new Error(`Microsoft Graph ${response.status}: ${(await response.text()).slice(0, 300)}`);
   return response;
 }
 
-async function uploadFile(token: string, driveId: string, path: string, file: File) {
-  const base = `/drives/${driveId}/root:/${path}/${encodeURIComponent(clean(file.name))}:`;
+async function uploadFile(token: string, base: string, file: File) {
   if (file.size <= 4 * 1024 * 1024) {
     await graph(token, `${base}/content`, { method: "PUT", headers: { "Content-Type": file.type || "application/octet-stream" }, body: await file.arrayBuffer() });
     return;
@@ -38,7 +47,7 @@ async function uploadFile(token: string, driveId: string, path: string, file: Fi
   for (let start = 0; start < file.size; start += chunkSize) {
     const end = Math.min(start + chunkSize, file.size);
     const response = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Length": String(end - start), "Content-Range": `bytes ${start}-${end - 1}/${file.size}` }, body: await file.slice(start, end).arrayBuffer() });
-    if (!response.ok && response.status !== 202) throw new Error(`Upload SharePoint întrerupt (${response.status}): ${(await response.text()).slice(0, 300)}`);
+    if (!response.ok && response.status !== 202) throw new Error(`Upload întrerupt (${response.status}): ${(await response.text()).slice(0, 300)}`);
   }
 }
 
@@ -64,28 +73,40 @@ Deno.serve(async (request) => {
     const { data: pbc, error: pbcError } = await userClient.from("pbc_requests").select("id,code,title,audit_firm_id,engagement_id,engagements!inner(name,period,entity_id,entities!inner(name))").eq("id", requestId).single();
     if (pbcError || !pbc) return json({ error: "Cerința nu există, nu este asignată clientului curent sau sesiunea nu are MFA activ." }, 403);
     const { data: settings } = await adminClient.from("app_settings").select("data").eq("audit_firm_id", pbc.audit_firm_id).single();
-    const host = String(settings?.data?.sharepoint_host ?? "");
-    const sitePath = String(settings?.data?.sharepoint_site_path ?? "");
-    const libraryName = String(settings?.data?.sharepoint_library ?? "Documente");
-    if (!host || !libraryName) return json({ error: "Conexiunea SharePoint nu este configurată complet în Setări → Conexiuni." }, 503);
-
-    const token = await graphToken();
-    const normalizedSitePath = sitePath.trim().replace(/^\/+|\/+$/g, "");
-    const siteEndpoint = !normalizedSitePath || normalizedSitePath.toLowerCase() === "root"
-      ? "/sites/root"
-      : `/sites/${host}:/${normalizedSitePath}`;
-    const site = await (await graph(token, siteEndpoint)).json();
-    const drives = await (await graph(token, `/sites/${site.id}/drives`)).json();
-    const drive = drives.value.find((item: { name: string }) => item.name.toLowerCase() === libraryName.toLowerCase());
-    if (!drive) return json({ error: `Biblioteca SharePoint „${libraryName}” nu a fost găsită pe site-ul configurat.` }, 503);
     const engagement = Array.isArray(pbc.engagements) ? pbc.engagements[0] : pbc.engagements;
     const entity = Array.isArray(engagement.entities) ? engagement.entities[0] : engagement.entities;
     const path = encodedPath([entity.name, engagement.name, `${pbc.code} - ${pbc.title}`]);
-    await uploadFile(token, drive.id, path, file);
+    const provider = String(settings?.data?.storage_provider ?? "sharepoint");
+    let storagePath = "";
+
+    if (provider === "sharepoint") {
+      const host = String(settings?.data?.sharepoint_host ?? "");
+      const sitePath = String(settings?.data?.sharepoint_site_path ?? "");
+      const libraryName = String(settings?.data?.sharepoint_library ?? "Documente");
+      if (!host || !sitePath || !libraryName) return json({ error: "Conexiunea SharePoint nu este configurată complet în Setări → Conexiuni." }, 503);
+      const token = await graphToken();
+      const normalizedSitePath = sitePath.trim().replace(/^\/+|\/+$/g, "");
+      const siteEndpoint = normalizedSitePath.toLowerCase() === "root" ? "/sites/root" : `/sites/${host}:/${normalizedSitePath}`;
+      const site = await (await graph(token, siteEndpoint)).json();
+      const drives = await (await graph(token, `/sites/${site.id}/drives`)).json();
+      const drive = drives.value.find((item: { name: string }) => item.name.toLowerCase() === libraryName.toLowerCase());
+      if (!drive) return json({ error: `Biblioteca SharePoint „${libraryName}” nu a fost găsită pe site-ul configurat.` }, 503);
+      await uploadFile(token, `/drives/${drive.id}/root:/${path}/${encodeURIComponent(clean(file.name))}:`, file);
+      storagePath = `sharepoint:${path}/${clean(file.name)}`;
+    } else if (provider === "onedrive") {
+      const folder = String(settings?.data?.onedrive_folder_path ?? "").trim();
+      if (!folder) return json({ error: "Folderul OneDrive nu este configurat în Setări → Conexiuni." }, 503);
+      const token = await oneDriveToken();
+      const root = encodedPath(folder.split("/"));
+      await uploadFile(token, `/me/drive/root:/${root}/${path}/${encodeURIComponent(clean(file.name))}:`, file);
+      storagePath = `onedrive:${root}/${path}/${clean(file.name)}`;
+    } else {
+      return json({ error: "Backend-ul de stocare selectat nu este valid." }, 400);
+    }
 
     const { data: versions } = await adminClient.from("documents").select("version").eq("request_id", requestId).eq("name", file.name).order("version", { ascending: false }).limit(1);
     const version = Number(versions?.[0]?.version ?? 0) + 1;
-    const { error: insertError } = await adminClient.from("documents").insert({ audit_firm_id: pbc.audit_firm_id, request_id: requestId, name: file.name, description, period, uploaded_by: userData.user.id, version, status: "new", size_bytes: file.size, storage_path: `${path}/${clean(file.name)}` });
+    const { error: insertError } = await adminClient.from("documents").insert({ audit_firm_id: pbc.audit_firm_id, request_id: requestId, name: file.name, description, period, uploaded_by: userData.user.id, version, status: "new", size_bytes: file.size, storage_path: storagePath });
     if (insertError) throw insertError;
     return json({ ok: true, version });
   } catch (error) {

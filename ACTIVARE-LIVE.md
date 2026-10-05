@@ -51,9 +51,22 @@ Autentifică Supabase CLI și rulează:
 supabase link --project-ref PROJECT_REF
 supabase secrets set MS_TENANT_ID="..." MS_CLIENT_ID="..." MS_CLIENT_SECRET="..." APP_ORIGIN="https://documente.celentis.ro"
 supabase functions deploy sharepoint-upload
+supabase functions deploy storage-test
 ```
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` și `SUPABASE_SERVICE_ROLE_KEY` sunt furnizate funcției de platforma Supabase. Secretul Microsoft nu se introduce în interfața web.
+
+### OneDrive personal
+
+Pentru OneDrive personal, înregistrează o aplicație Microsoft care acceptă și conturi Microsoft personale și acordă permisiunile delegate `Files.ReadWrite`, `User.Read` și `offline_access`. După autentificarea contului, salvează valorile exclusiv ca Supabase Secrets:
+
+```powershell
+supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="..." ONEDRIVE_CLIENT_SECRET="..." ONEDRIVE_REFRESH_TOKEN="..."
+supabase functions deploy sharepoint-upload
+supabase functions deploy storage-test
+```
+
+Contul și calea folderului se completează separat, per firmă de audit, în Setări → Conexiuni. Refresh tokenul și secretul aplicației nu se salvează în `app_settings` și nu ajung în browser.
 
 ## 5. Setările din aplicație
 

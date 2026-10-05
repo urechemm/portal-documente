@@ -10,49 +10,7 @@ sb_publishable_jWmQxdOgRfFyIGOSF8njCg_IKIxWwqP
 primul DB user - administrator:
 urechemm@yahoo.com
 supabaseUMM1980!
-=======================================================================================================
-GitHub:
-https://github.com/urechemm/portal-documente/archive/d75bc359af90b3f254e52e21112a1c1466cb1b7f.zip
-https://github.com/urechemm/portal-documente/archive/3861dc307d8c7d1757c8d18a18ffb1138367c562.zip
 
-=======================================================================================================
-Entra ID Center
-
-Portal Documente Backend
-
-
-Application (Client) ID
-0d487919-1b9a-407b-b545-58773e3bd2c9
-
-Object ID
-97036a8b-87d0-4893-9a16-bd067d1da277
-
-Directory (tenant) ID
-26f35d6d-38de-4b9a-8159-dbb07cd8628f
-
-Supported account types
-My organization only
-
-Client credentials
-SecretID
-a8e6afa2-4463-4078-b71b-afdfc29e2c5e
-Value
-1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_
-
-Redirect URIs
-1 web, 0 spa, 0 public client
-
-Application ID URI
-Add an Application ID URI
-
-Managed application in local directory
-Portal Documente Backend
-
-State
-Activated
-
-======================================================================================================
-PowerShell
 npx.cmd supabase link --project-ref iekirbhyctllpvqnvnzk
 npx.cmd supabase secrets set MS_TENANT_ID="26f35d6d-38de-4b9a-8159-dbb07cd8628f" MS_CLIENT_ID="0d487919-1b9a-407b-b545-58773e3bd2c9" MS_CLIENT_SECRET="a8e6afa2-4463-4078-b71b-afdfc29e2c5e" APP_ORIGIN="https://documente.celentis.ro"
 npx.cmd supabase functions deploy sharepoint-upload 
@@ -73,9 +31,99 @@ npx.cmd supabase secrets list
    SUPABASE_SECRET_KEYS      | 25f47608b0c6738e10725e7f1062454c455ce5b781477b87cce8849cbcb1cc3e 
    SUPABASE_SERVICE_ROLE_KEY | 6f7b7a487586cf4550992a691e552c877938d90e08d505a37406bdfce414bfcc 
    SUPABASE_URL              | d83fe772564d55fe7cfe37d7bb6ab737ab3d3ca4d7261e6757cbb6c8b37f5758 
+   
+npx.cmd supabase functions deploy sharepoint-upload
+npx.cmd supabase functions deploy storage-test
+
+
+npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="..." ONEDRIVE_CLIENT_SECRET="..." ONEDRIVE_REFRESH_TOKEN="..."
+
+npx.cmd  supabase secrets set ONEDRIVE_TENANT_ID="consumers" ONEDRIVE_CLIENT_ID="49e4ed42-3776-473b-a7eb-de2b01611e92" ONEDRIVE_CLIENT_SECRET="Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7	" ONEDRIVE_REFRESH_TOKEN="M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHP
+                 ltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8
+                 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u
+                 1ZN28qj5WX!tL2iE4M5CQo$"
+
+
+ONEDRIVE_REFRESH_TOKEN : instructiuni aici: https://chatgpt.com/share/e/6ac325e1-d1b8-8002-ac1c-d9244c2b261d
+
+
+https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=49e4ed42-3776-473b-a7eb-de2b01611e92&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback&response_mode=query&scope=offline_access%20User.Read%20Files.ReadWrite&prompt=consent
+
+http://localhost:3000/callback?code=M.C553_BAY.2.U.MsaArtifacts.DrmGMllLn1OgfYustLE8c9S4fhlqwDIBe2SOPFfd4RaXqiI0GdWr87igrsicShuATTuTyYoGsNJuiTWNe4aLbRcfF0M4PidE6fcECFqlzD8MYjeRaNepwB05j5L9XHEi0ScL8PEer2Z*WqOjOp1ycA3UQ!n0S*zmRIzZC8x!2kjPJB!rkCMf0vSv0CSLBvwI6MflrclQfREnFfOoCE1Tzuu2bRTo36OXPZgKpVh09V5p26G4n9*rr6YajhBXOsVGvuPBUjCv2EZC6ZUJ9TjBg7BB4Pu92yyDEXkypsfeIKYmfvT9PACS*tC8BZvzxw4X4BYZLWxpm1Mt*NNWZb2ygS5G8pf5lYq!CRIubyu6C8tSw*04ic8QRZz83ojZY0ZxfzvjYPGiibw4hTU1LReLXaIZHPq6H1LBYWEtkvyrOVH5e2*h*7pxDZ4J0RIoSraGJG1qspC!82R147GW38UiQJAm3jxf!P6biF!54oeowF3UrAwSCBFiD9HZovOZLb9pMxJHJy02oZDSCrIHj81PDhdZN02mcdItARhmb5E*X2SGd5Duzh7rqeq!*Y9iLHnnqA%24%24
+
+PowerShell :
+
+$authorizationCode = "M.C553_BAY.2.U.MsaArtifacts.DrmGMllLn1OgfYustLE8c9S4fhlqwDIBe2SOPFfd4RaXqiI0GdWr87igrsicShuATTuTyYoGsNJuiTWNe4aLbRcfF0M4PidE6fcECFqlzD8MYjeRaNepwB05j5L9XHEi0ScL8PEer2Z*WqOjOp1ycA3UQ!n0S*zmRIzZC8x!2kjPJB!rkCMf0vSv0CSLBvwI6MflrclQfREnFfOoCE1Tzuu2bRTo36OXPZgKpVh09V5p26G4n9*rr6YajhBXOsVGvuPBUjCv2EZC6ZUJ9TjBg7BB4Pu92yyDEXkypsfeIKYmfvT9PACS*tC8BZvzxw4X4BYZLWxpm1Mt*NNWZb2ygS5G8pf5lYq!CRIubyu6C8tSw*04ic8QRZz83ojZY0ZxfzvjYPGiibw4hTU1LReLXaIZHPq6H1LBYWEtkvyrOVH5e2*h*7pxDZ4J0RIoSraGJG1qspC!82R147GW38UiQJAm3jxf!P6biF!54oeowF3UrAwSCBFiD9HZovOZLb9pMxJHJy02oZDSCrIHj81PDhdZN02mcdItARhmb5E*X2SGd5Duzh7rqeq!*Y9iLHnnqA%24%24"
+$authorizationCode = [System.Net.WebUtility]::UrlDecode($authorizationCode)
+
+$body = @{
+    client_id     = "49e4ed42-3776-473b-a7eb-de2b01611e92"
+    client_secret = "Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7"
+    code          = $authorizationCode
+    redirect_uri  = "http://localhost:3000/callback"
+    grant_type    = "authorization_code"
+    scope         = "offline_access User.Read Files.ReadWrite"
+}
+
+$response = Invoke-RestMethod `
+    -Method Post `
+    -Uri "https://login.microsoftonline.com/consumers/oauth2/v2.0/token" `
+    -ContentType "application/x-www-form-urlencoded" `
+    -Body $body
+
+$response
+
+token_type     : Bearer
+scope          : User.Read Files.ReadWrite
+expires_in     : 3599
+ext_expires_in : 3599
+access_token   : EwA4BMl6BAAUCBUz0PacyGyQMzAdZCXlnFTa1qQAAR+/3fjgjErwD+jcIDYkkDeIOA7TmJDdZBoRE2r0vMXrSyTmriH3Iol61IkvMb2cMgaLGRipBzKnjMSGrmvCQgo5Rojxtr/h1k
+                 xlNAtG1aA6pncL3oCMoFbjMUtsvoy9m+oTXeOeeijcDPsRtI9hmz+MWLtbMEr5CENTu6t6nL9J8wIsdvh664epYYClfGtAGys9PXcE8o3DI4itQouPgAOwL2e2v0x98xFukPSUx7mZ
+                 DY0UHE78Tz/Df4jkjARoRHgRlGt6YUsRKxpgRZ5+SfsZI/HW38MA94xNcTryIIkaSrQExh6s1lIvrx7sRQklRMN99yOS4owtulhebFAQWMkQZgAAEKX/MEYCT3d8K2SfE7l2TywAA7
+                 5OD/IJdsFw/AavXiDV7NRGF13xwlNwpGa0zBAb4qK9wH+X3F+U59EnUDiXnyJfM7usDdzaWei4r+piszli6eUoGVT8qkV/x4koxnMa0w26kUzmkBsNdEjiSATk2Gppb9ZcG6qpNAoe
+                 eoEZizxYVDY7SxxNCVM6gnyxFJ+MLMWfrspnXxOcw4TTe5ZgcTAO0rSswjLLN6+ZcXFGb3rxbWZdNBklLi/qCB941g0P9of54dbJH+T2kpzXU9NSlAJikS5NclfIR6IKW2sNji/rpr
+                 UTyjMHH6lrLK8x68/oqD59XPUqhedqxQC6Uf9tX0qqDvroAyE3qY5LtFeZ66ApPYd22rjYr6V4Mk65/maUeR9WSFGFPhMNKpGumqLszxh2W/K4FIZ8HF5/DvN6bbvtGGE2v0okEvdc
+                 aTwSDBqhAYAcM8OksTPaVzCFBfJ00mynU6X0UJE/5TpGA62XdjWBR2+Umq3d9C7lwwrVvzFkXp+CSJi5vHMTDKTIm3oDQ4TFDFQb7OFXgGYIAqDYnlnlZGwvtYhydmS1k05K2SLYSp
+                 b+8XbwLEV5LbxVykLoC202fU730prd+UIufVwkqpDsoZ3TdzZ6/kOsSkh2T3EjVh0oVde+STO9hjybBD/n4JUdskhswaeQAUTb15urXeKEdH8qDM7pgM0GZkxnfg7DS71QOeS8jI7D
+                 evdGTYrCLHCTEymkNPyVzl62mIitgKWZME2s0eoSpo9LeiIbmIm7RYnxerd9BQAUSriAca7ZDmFLTrvqheo3T2k/P2fNzw+5ExZOhp88Idta8IFcBal+Fa9r47Bw5hxvt2iJea+8+y
+                 ByXgmAYyYDxFAZFfTJXyJRlHJh6DyA+e/jvn8cn8u+zspdedwokpcv20MA6pZNbc9QgAnLwjveL03Ue/tlqomHG4I3cScW/+oSOUzhpDhp5VmIEmksw0WTIkervoy2XPHe9+L3oMA7
+                 X10hseMwRlBW30urNI1u3xOxuWaeU1cT7VKsWzmWm3M49VnVOYum3MoG4DkD
+refresh_token  : M.C553_BAY.0.U.MsaArtifacts.-Clw3NGmqxHeVxLWQka6G2JaPwqIV9NKEqSMXwZrz0p3PFypcJZE6b1yXK6Mqj6av6FWn8NxWM5MRcGMMAqxsmN2*iDRjRCd0le57BGg68YKHP
+                 ltuvCHw60QIwWuAJcUeuZ4vzYn2PLPehwCR*OvgHpSKa4pGVFhWvq6uOmk!ye8cliYNYYnNxktlUh5YxUsbFR4VgMIhSC19MfN!eiCpSy34oF!cimmmkAmDinfI9j5expQ28zCthb8
+                 PR0TtFpO6M3ybNpMgg6fQ1zerGy91B8ZIXW5Cd*L8JfQ2MOKRH4IsOEpKEeR0n48ACn8aHPzqwPXnYDtqWTh1uN8JnwhuZaj5COpO5gl4mwNs0hDKgEXf1OoQH9tSJ!tx*HB9o1q*u
+                 1ZN28qj5WX!tL2iE4M5CQo$
+
+=======================================================================================================
+GitHub:
+https://github.com/urechemm/portal-documente/archive/d75bc359af90b3f254e52e21112a1c1466cb1b7f.zip
+https://github.com/urechemm/portal-documente/archive/3861dc307d8c7d1757c8d18a18ffb1138367c562.zip
+
+=======================================================================================================
+Micorosft Entra
+A)Entra ID Center - CELENTIS
+
+Display name: Portal Documente Backend
+Application (Client) ID:0d487919-1b9a-407b-b545-58773e3bd2c9
+Object ID:97036a8b-87d0-4893-9a16-bd067d1da277
+Directory (tenant) ID:26f35d6d-38de-4b9a-8159-dbb07cd8628f
+Supported account types:My organization only
+
+Client credentials:
+SecretID: a8e6afa2-4463-4078-b71b-afdfc29e2c5e
+Value: 1Ex8Q~Q0LHauEm0YgTr~C67t.nuRDKPiN4RlEaE_
+
+B)Entra-ID cont personal
+
+Display name: Portal-Documente
+Application (client) ID:49e4ed42-3776-473b-a7eb-de2b01611e92
+Object ID:8109a665-25de-4316-b1c5-216e6019813d
+Directory (tenant) ID:5e49785a-26a0-4b1c-98c7-a1c3b88b8d6e
+Client secret Value:Kfj8Q~xFoAwoJo~wsAWr34vndjyksI3dcRQx7cV7
+Client secret ID:58ba28ca-c8bb-4c08-bc2e-e60ac18901ba
+
 ======================================================================================================
 Settings - sharepoint
-SharePoint host:          celentis.sharepoint.com
-Cale site SharePoint:     root
-Bibliotecă documente:     Portal-Documente
+SharePoint host          celentis.sharepoint.com
+Cale site SharePoint     root
+Bibliotecă documente     Portal-Documente
 

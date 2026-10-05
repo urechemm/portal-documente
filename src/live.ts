@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { DocumentRecord, Settings, State } from "./domain";
+import type { DocumentRecord, Settings, State, StorageProvider } from "./domain";
 
 export interface RuntimeConfig {
   supabaseUrl: string;
@@ -88,7 +88,8 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
 
   const baseSettings: Settings = {
     supabase_url: "", supabase_publishable_key: "", global_admin_email: "",
-    sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente", digest_hour: "17:00", retention_years: 7,
+    storage_provider: "sharepoint", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente",
+    onedrive_user: "", onedrive_folder_path: "", digest_hour: "17:00", retention_years: 7,
   };
   const documentRows: DocumentRecord[] = (documents.data ?? []).map((item) => ({
     id: item.id, audit_firm_id: item.audit_firm_id, request_id: item.request_id,
@@ -162,8 +163,17 @@ export async function uploadLiveDocument(client: SupabaseClient, requestId: stri
   form.set("period", period);
   form.set("file", file);
   const { data, error } = await client.functions.invoke("sharepoint-upload", { body: form });
-  if (error) throw new Error(await edgeFunctionError(error, "Upload-ul SharePoint a eșuat."));
+  if (error) throw new Error(await edgeFunctionError(error, "Upload-ul documentului a eșuat."));
   if (data?.error) throw new Error(data.error);
+}
+
+export async function testLiveStorage(client: SupabaseClient, auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>): Promise<string> {
+  const { data, error } = await client.functions.invoke("storage-test", {
+    body: { audit_firm_id: auditFirmId, provider, configuration },
+  });
+  if (error) throw new Error(await edgeFunctionError(error, "Testul conexiunii de stocare a eșuat."));
+  if (data?.error) throw new Error(data.error);
+  return String(data?.message ?? "Testul de scriere și citire a reușit.");
 }
 
 export async function inviteLiveUser(client: SupabaseClient, auditFirmId: string, name: string, email: string, role: string): Promise<boolean> {

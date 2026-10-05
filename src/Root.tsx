@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ArrowRight, FileCheck2, LockKeyhole, ShieldCheck } from "lucide-react";
 import App from "./App";
-import { createLiveClient, inviteLiveUser, loadLiveState, loadRuntimeConfig, persistLiveDelta, uploadLiveDocument, type RuntimeConfig } from "./live";
+import { createLiveClient, inviteLiveUser, loadLiveState, loadRuntimeConfig, persistLiveDelta, testLiveStorage, uploadLiveDocument, type RuntimeConfig } from "./live";
 import type { State } from "./domain";
 
 export default function Root() {
@@ -58,7 +58,7 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
   if (mustSetPassword) return <SetPasswordGate client={client} error={error} setError={setError} completed={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (mfa) return <MfaGate client={client} factor={mfa} error={error} setError={setError} verified={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (!state) return <div className="loading"><ShieldCheck/><h2>{error || "Se încarcă spațiul de audit…"}</h2>{error && <button className="secondary" onClick={() => void refresh()}>Reîncearcă</button>}</div>;
-  return <App initialState={state} live persist={(before, after) => persistLiveDelta(client, before, after)} reload={(firm) => loadLiveState(client, firm)} uploadLive={(requestId, file, description, period) => uploadLiveDocument(client, requestId, file, description, period)} inviteLive={(auditFirmId, name, email, role) => inviteLiveUser(client, auditFirmId, name, email, role)} logout={() => client.auth.signOut()}/>;
+  return <App initialState={state} live persist={(before, after) => persistLiveDelta(client, before, after)} reload={(firm) => loadLiveState(client, firm)} uploadLive={(requestId, file, description, period) => uploadLiveDocument(client, requestId, file, description, period)} testStorage={(auditFirmId, provider, configuration) => testLiveStorage(client, auditFirmId, provider, configuration)} inviteLive={(auditFirmId, name, email, role) => inviteLiveUser(client, auditFirmId, name, email, role)} logout={() => client.auth.signOut()}/>;
 }
 
 function SetPasswordGate({ client, error, setError, completed }: { client: ReturnType<typeof createLiveClient>; error: string; setError: (value: string) => void; completed: () => void }) {

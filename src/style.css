@@ -209,6 +209,7 @@ label small { color: var(--muted); font-weight: 400; }
 .connection-status i { width: 9px; height: 9px; border-radius: 50%; background: #aebbc1; }
 .connection-status strong { color: var(--muted); font-size: .72rem; }
 .connection-status.sharepoint { margin-top: 26px; }
+.connection-actions { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
 .tenant-list { display: grid; gap: 8px; }
 .tenant-list article { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; }
 .tenant-list article strong, .tenant-list article small { display: block; }

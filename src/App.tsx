@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import {
   formatDate, formatDateTime, roleLabels, statusLabels, today, uid,
-  type Engagement, type PbcRequest, type RequestStatus, type Role, type State,
+  type Engagement, type PbcRequest, type RequestStatus, type Role, type State, type StorageProvider,
 } from "./domain";
 import { addComment, addRequest, mutateState, readState, resetState, setRole, updateRequestStatus, uploadDocument } from "./store";
 import { importRequests, requestTemplate } from "./files";
@@ -44,11 +44,12 @@ interface AppProps {
   persist?: (before: State, after: State) => Promise<State>;
   reload?: (firm?: string | null) => Promise<State>;
   uploadLive?: (requestId: string, file: File, description: string, period: string) => Promise<void>;
+  testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>;
   inviteLive?: (auditFirmId: string, name: string, email: string, role: Role) => Promise<boolean>;
   logout?: () => Promise<unknown>;
 }
 
-export default function App({ initialState, live = false, persist, reload, uploadLive, inviteLive, logout }: AppProps = {}) {
+export default function App({ initialState, live = false, persist, reload, uploadLive, testStorage, inviteLive, logout }: AppProps = {}) {
   const [state, setState] = useState<State>(() => initialState ?? readState());
   const [page, setPage] = useState<Page>("dashboard");
   const [modal, setModal] = useState<ModalName>(null);
@@ -143,7 +144,7 @@ export default function App({ initialState, live = false, persist, reload, uploa
     { page: "engagements", label: "Misiuni", icon: Files },
     { page: "requests", label: "Lista cerințe", icon: FileText, count: tenantRequests.length },
     { page: "activity", label: "Activitate", icon: Activity, count: actionRequests.length },
-    { page: "team", label: "Echipă și acces", icon: Users, admin: true },
+    { page: "team", label: "Utilizatori", icon: Users, admin: true },
     { page: "settings", label: "Setări", icon: Settings, admin: true },
   ];
 
@@ -186,13 +187,13 @@ export default function App({ initialState, live = false, persist, reload, uploa
 
         {page === "team" && role === "admin" && <TeamPage state={state} save={(next, message) => void save(next, message)} invite={() => { setError(""); setModal("invite"); }} />}
 
-        {page === "settings" && role === "admin" && <SettingsPage state={state} setState={setState} notify={notify} live={live} persist={(next, message) => void save(next, message)} createFirm={() => { setError(""); setModal("firm"); }} toggleFirm={toggleFirm} />}
+        {page === "settings" && role === "admin" && <SettingsPage state={state} live={live} persist={(next, message) => save(next, message)} testStorage={testStorage} notify={notify} createFirm={() => { setError(""); setModal("firm"); }} toggleFirm={toggleFirm} />}
       </main>
       <footer className="page-footer"><span>Portal Documente · MVP</span><span><ShieldCheck size={14}/>Segregare multi-tenant · jurnalizare activă</span></footer>
     </section>
 
     {modal === "detail" && selected && <RequestDetail request={selected} documents={docsFor(selected.id)} comments={comments.filter((item) => item.request_id === selected.id)} profileName={profileName} auditUser={auditUser} close={() => setModal(null)} upload={() => setModal("upload")} notApplicable={() => setModal("not-applicable")} updateStatus={(status) => save(updateRequestStatus(state, selected.id, status), `Cerința este acum „${statusLabels[status]}”.`)} addMessage={(body) => save(addComment(state, selected.id, body), "Mesajul a fost adăugat.")} />}
-    {modal === "upload" && selected && <UploadModal request={selected} close={() => setModal(null)} submit={async (file, description, period) => { if (live && uploadLive && reload) { try { await uploadLive(selected.id, file, description, period); setState(await reload(state.current_firm_id)); notify("Documentul a fost încărcat în SharePoint."); setModal("detail"); } catch (reason) { setError((reason as Error).message); } } else { void save(uploadDocument(state, selected.id, file, description, period), "Documentul a fost asociat cerinței."); setModal("detail"); } }} />}
+    {modal === "upload" && selected && <UploadModal request={selected} close={() => setModal(null)} submit={async (file, description, period) => { if (live && uploadLive && reload) { try { await uploadLive(selected.id, file, description, period); setState(await reload(state.current_firm_id)); notify("Documentul a fost încărcat în spațiul de stocare configurat."); setModal("detail"); } catch (reason) { setError((reason as Error).message); } } else { void save(uploadDocument(state, selected.id, file, description, period), "Documentul a fost asociat cerinței."); setModal("detail"); } }} />}
     {modal === "not-applicable" && selected && <NotApplicableModal close={() => setModal("detail")} submit={(reason) => { save(updateRequestStatus(state, selected.id, "not_applicable", reason), "Explicația a fost înregistrată în audit trail."); setModal("detail"); }} />}
     {modal === "request" && currentEngagement && <RequestForm state={state} engagement={currentEngagement} close={() => setModal(null)} submit={(request) => { save(addRequest(state, request), "Cerința a fost creată."); setModal(null); }} />}
     {modal === "engagement" && <EngagementForm state={state} close={() => setModal(null)} submit={(engagement, entityDetails, memberIds) => { const next = mutateState(state, (draft) => { const entityId = uid(); draft.entities.push({ id: entityId, audit_firm_id: draft.current_firm_id, ...entityDetails }); draft.engagements.push({ ...engagement, entity_id: entityId }); for (const userId of new Set([engagement.auditor_id, engagement.client_id, ...memberIds])) draft.engagement_users.push({ engagement_id: engagement.id, audit_firm_id: draft.current_firm_id, user_id: userId }); }); setSelectedEngagementId(engagement.id); sessionStorage.setItem("portal-selected-engagement", engagement.id); save(next, "Misiunea a fost creată."); setModal(null); }} />}
@@ -239,7 +240,7 @@ function UploadModal({ request, close, submit }: { request: PbcRequest; close: (
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
   const [period, setPeriod] = useState(request.period);
-  return <Modal title="Încarcă document" close={close}><div className="context-card"><small>Cerință</small><strong>{request.code} · {request.title}</strong></div><form onSubmit={(event) => { event.preventDefault(); if (file) submit(file, description.trim(), period); }}><label className="upload-zone"><Upload/><strong>{file ? file.name : "Alegeți sau trageți fișierul aici"}</strong><span>PDF, Excel, Word, imagini sau arhive</span><input type="file" required onChange={(event) => setFile(event.target.files?.[0] ?? null)}/></label><label>Descrierea documentului *<textarea required minLength={12} value={description} onChange={(event) => setDescription(event.target.value)} placeholder={`Exemplu: ${request.title} la ${request.period}, după înregistrarea ajustărilor finale.`}/><small>Descrieți concret ce conține fișierul și perioada la care se referă.</small></label><label>Perioadă<input required value={period} onChange={(event) => setPeriod(event.target.value)}/></label><div className="notice"><ShieldCheck/>Documentul va fi asociat automat cerinței. Structura SharePoint rămâne invizibilă clientului.</div><div className="form-actions"><button type="button" className="secondary" onClick={close}>Renunță</button><button className="primary" disabled={!file || description.trim().length < 12}>Trimite auditorului</button></div></form></Modal>;
+  return <Modal title="Încarcă document" close={close}><div className="context-card"><small>Cerință</small><strong>{request.code} · {request.title}</strong></div><form onSubmit={(event) => { event.preventDefault(); if (file) submit(file, description.trim(), period); }}><label className="upload-zone"><Upload/><strong>{file ? file.name : "Alegeți sau trageți fișierul aici"}</strong><span>PDF, Excel, Word, imagini sau arhive</span><input type="file" required onChange={(event) => setFile(event.target.files?.[0] ?? null)}/></label><label>Descrierea documentului *<textarea required minLength={12} value={description} onChange={(event) => setDescription(event.target.value)} placeholder={`Exemplu: ${request.title} la ${request.period}, după înregistrarea ajustărilor finale.`}/><small>Descrieți concret ce conține fișierul și perioada la care se referă.</small></label><label>Perioadă<input required value={period} onChange={(event) => setPeriod(event.target.value)}/></label><div className="notice"><ShieldCheck/>Documentul va fi asociat automat cerinței. Structura backend-ului de stocare rămâne invizibilă clientului.</div><div className="form-actions"><button type="button" className="secondary" onClick={close}>Renunță</button><button className="primary" disabled={!file || description.trim().length < 12}>Trimite auditorului</button></div></form></Modal>;
 }
 
 function NotApplicableModal({ close, submit }: { close: () => void; submit: (reason: string) => void }) {
@@ -282,7 +283,7 @@ function EngagementForm({ state, close, submit }: { state: State; close: () => v
       <label>Client *<select name="client_id" required defaultValue=""><option value="" disabled>Selectează…</option>{clients.map((item) => <option key={item.user_id} value={item.user_id}>{profileName(item.user_id)} — Client</option>)}</select></label>
       <label className="span-2">Membrii echipei / acces client<select name="member_ids" multiple size={Math.min(7, Math.max(3, memberships.length))}>{memberships.map((item) => <option key={item.user_id} value={item.user_id}>{profileName(item.user_id)} — {roleLabels[item.role]}</option>)}</select><small>Ține apăsat Ctrl pentru a selecta mai mulți membri.</small></label>
     </div>
-    {(!auditors.length || !clients.length) && <div className="error-box">Adaugă în „Echipă și acces” cel puțin un Auditor/Manager și un Client înainte de crearea misiunii.</div>}
+    {(!auditors.length || !clients.length) && <div className="error-box">Adaugă în „Utilizatori” cel puțin un Auditor/Manager și un Client înainte de crearea misiunii.</div>}
     <div className="form-actions"><button type="button" className="secondary" onClick={close}>Renunță</button><button className="primary" disabled={!auditors.length || !clients.length}>Creează misiunea</button></div>
   </form></Modal>;
 }
@@ -346,17 +347,84 @@ function InviteUserModal({ firms, currentFirmId, close, submit }: { firms: State
 
 function TeamPage({ state, save, invite }: { state: State; save: (state: State, message: string) => void; invite: () => void }) {
   const memberships = state.memberships.filter((item) => item.audit_firm_id === state.current_firm_id);
-  return <><div className="page-heading"><div><div className="eyebrow">AUTORIZARE PER TENANT</div><h1>Echipă și acces</h1><p>Rolul este atribuit separat în fiecare firmă de audit.</p></div><button className="primary" onClick={invite}><Plus/>Invită utilizator</button></div><section className="panel"><div className="table-wrap flat"><table><thead><tr><th>Utilizator</th><th>Email</th><th>Rol în tenant</th><th>Status</th></tr></thead><tbody>{memberships.map((membership) => { const user = state.profiles.find((item) => item.id === membership.user_id)!; return <tr key={membership.id}><td><strong>{user.name}</strong></td><td>{user.email}</td><td><select value={membership.role} onChange={(event) => { const next = mutateState(state, (draft) => { const row = draft.memberships.find((item) => item.id === membership.id); if (row) row.role = event.target.value as Role; }); save(next, "Rolul a fost actualizat."); }}><option value="admin">Administrator</option><option value="manager">Manager</option><option value="auditor">Auditor</option><option value="client">Client</option></select></td><td><span className={`badge ${membership.active ? "complete" : "neutral"}`}><i/>{membership.active ? "Activ" : "Revocat"}</span></td></tr>; })}</tbody></table></div></section></>;
+  return <><div className="page-heading"><div><div className="eyebrow">AUTORIZARE PER TENANT</div><h1>Utilizatori</h1><p>Rolul este atribuit separat în fiecare firmă de audit.</p></div><button className="primary" onClick={invite}><Plus/>Invită utilizator</button></div><section className="panel"><div className="table-wrap flat"><table><thead><tr><th>Utilizator</th><th>Email</th><th>Rol în tenant</th><th>Status</th></tr></thead><tbody>{memberships.map((membership) => { const user = state.profiles.find((item) => item.id === membership.user_id)!; return <tr key={membership.id}><td><strong>{user.name}</strong></td><td>{user.email}</td><td><select value={membership.role} onChange={(event) => { const next = mutateState(state, (draft) => { const row = draft.memberships.find((item) => item.id === membership.id); if (row) row.role = event.target.value as Role; }); save(next, "Rolul a fost actualizat."); }}><option value="admin">Administrator</option><option value="manager">Manager</option><option value="auditor">Auditor</option><option value="client">Client</option></select></td><td><span className={`badge ${membership.active ? "complete" : "neutral"}`}><i/>{membership.active ? "Activ" : "Revocat"}</span></td></tr>; })}</tbody></table></div></section></>;
 }
 
-function SettingsPage({ state, live, persist, toggleFirm, createFirm }: { state: State; setState: (state: State) => void; notify: (message: string) => void; live: boolean; persist: (state: State, message: string) => void; toggleFirm: (firmId: string) => Promise<void>; createFirm: () => void }) {
+function SettingsPage({ state, live, persist, testStorage, notify, toggleFirm, createFirm }: { state: State; live: boolean; persist: (state: State, message: string) => Promise<void>; testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>; notify: (message: string) => void; toggleFirm: (firmId: string) => Promise<void>; createFirm: () => void }) {
   const [tab, setTab] = useState<"general" | "connections" | "tenants" | "security">("general");
   return <><div className="page-heading"><div><div className="eyebrow">DOAR ADMINISTRATOR</div><h1>Setări</h1><p>Configurația aplicației și conexiunile externe pot fi schimbate fără modificarea codului.</p></div></div><div className="settings-layout"><nav className="settings-nav"><button className={tab === "general" ? "active" : ""} onClick={() => setTab("general")}><Settings/>General</button><button className={tab === "connections" ? "active" : ""} onClick={() => setTab("connections")}><Building2/>Conexiuni</button><button className={tab === "tenants" ? "active" : ""} onClick={() => setTab("tenants")}><Users/>Multi-tenant</button><button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}><ShieldCheck/>Securitate</button></nav><section className="panel settings-panel">
     {tab === "general" && <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const next = mutateState(state, (draft) => { draft.settings.digest_hour = String(data.get("digest_hour")); draft.settings.retention_years = Number(data.get("retention_years")); }); persist(next, "Setările generale au fost salvate."); }}><h2>Preferințe operaționale</h2><p className="muted">Digestul reduce zgomotul și consolidează activitatea zilnică.</p><div className="form-grid"><label>Ora digestului<input name="digest_hour" type="time" defaultValue={state.settings.digest_hour}/></label><label>Retenție documente (ani)<input name="retention_years" type="number" min="1" max="20" defaultValue={state.settings.retention_years}/></label></div><button className="primary">Salvează</button></form>}
-    {tab === "connections" && <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const next = mutateState(state, (draft) => { if (!live) { draft.settings.supabase_url = String(data.get("supabase_url")); draft.settings.supabase_publishable_key = String(data.get("supabase_publishable_key")); } draft.settings.global_admin_email = String(data.get("global_admin_email")); draft.settings.sharepoint_host = String(data.get("sharepoint_host")); draft.settings.sharepoint_user = String(data.get("sharepoint_user")); draft.settings.sharepoint_site_path = String(data.get("sharepoint_site_path")); draft.settings.sharepoint_library = String(data.get("sharepoint_library")); }); persist(next, live ? "Configurația conexiunilor a fost salvată." : "Configurația conexiunilor a fost salvată local."); }}><h2>Conexiuni backend</h2><div className="connection-status"><span><i/>Supabase</span><strong>{live ? "Conectat · producție" : state.settings.supabase_url ? "Configurat" : "Neconfigurat"}</strong></div>{live ? <div className="notice"><ShieldCheck/>URL-ul și cheia publică Supabase sunt încărcate din configurația de deployment. Cheile private nu sunt expuse în browser.</div> : <><label>Supabase Project URL<input name="supabase_url" type="url" defaultValue={state.settings.supabase_url} placeholder="https://…supabase.co"/></label><label>Supabase publishable key<input name="supabase_publishable_key" type="password" defaultValue={state.settings.supabase_publishable_key} autoComplete="off" placeholder="sb_publishable_…"/></label></>}<label>Email Global Administrator<input name="global_admin_email" type="email" defaultValue={state.settings.global_admin_email} placeholder="administrator@firma.ro"/></label><div className="connection-status sharepoint"><span><i/>SharePoint / Microsoft 365</span><strong>{state.settings.sharepoint_host && state.settings.sharepoint_site_path ? "Configurat · Graph" : "Neconfigurat"}</strong></div><label>SharePoint host<input name="sharepoint_host" defaultValue={state.settings.sharepoint_host} placeholder="companie.sharepoint.com"/></label><label>Cale site SharePoint<input name="sharepoint_site_path" defaultValue={state.settings.sharepoint_site_path} placeholder="sites/Audit"/></label><label>Bibliotecă documente<input name="sharepoint_library" defaultValue={state.settings.sharepoint_library} placeholder="Documente"/></label><label>Utilizator Microsoft 365<input name="sharepoint_user" type="email" defaultValue={state.settings.sharepoint_user} placeholder="utilizator@companie.ro"/></label><div className="notice"><CircleAlert/>Secretul aplicației Microsoft este păstrat exclusiv în Supabase Secrets. Nicio parolă Microsoft nu este salvată în aplicație.</div><button className="primary">Salvează conexiunile</button></form>}
+    {tab === "connections" && <ConnectionsSettings state={state} live={live} persist={persist} testStorage={testStorage} notify={notify}/>}
     {tab === "tenants" && <><div className="section-heading"><div><h2>Firme de audit</h2><p>Fiecare rând de business poartă obligatoriu identificatorul tenantului.</p></div>{state.is_global_admin && <button className="primary" onClick={createFirm}><Plus/>Firmă nouă</button>}</div><div className="tenant-list">{state.firms.map((firm) => <article key={firm.id}><span className="entity-mark">{firm.code.slice(0, 2)}</span><div><strong>{firm.name}</strong><small>{firm.code}{firm.email ? ` · ${firm.email}` : ""}</small></div><span className={`badge ${firm.active ? "complete" : "neutral"}`}><i/>{firm.active ? "Activ" : "Inactiv"}</span>{state.is_global_admin && <button className="secondary small-button" onClick={() => void toggleFirm(firm.id)}>{firm.active ? "Dezactivează" : "Activează"}</button>}</article>)}</div></>}
     {tab === "security" && <><h2>Controale de securitate</h2><div className="security-grid"><SecurityItem title="MFA" text="Impus prin furnizorul de identitate Microsoft / Supabase."/><SecurityItem title="RLS multi-tenant" text="Politicile bazei de date izolează fiecare firmă și client."/><SecurityItem title="Audit trail imuabil" text="Evenimentele pot fi adăugate, dar nu modificate de client."/><SecurityItem title="Jurnal acces" text="Downloadurile și schimbările de status sunt atribuite utilizatorului."/><SecurityItem title="Scanare fișiere" text="De activat în fluxul SharePoint/Graph înainte de producție."/><SecurityItem title="Revocare acces" text="Apartenența utilizatorului poate fi dezactivată imediat."/></div><div className="danger-zone"><div><strong>Resetează datele demonstrative</strong><small>Reface setul local de exemple. Nu afectează Supabase.</small></div><button className="secondary" onClick={() => { resetState(); location.reload(); }}>Reset demo</button></div></>}
   </section></div></>;
+}
+
+function ConnectionsSettings({ state, live, persist, testStorage, notify }: { state: State; live: boolean; persist: (state: State, message: string) => Promise<void>; testStorage?: (auditFirmId: string, provider: StorageProvider, configuration: Record<string, string>) => Promise<string>; notify: (message: string) => void }) {
+  const [provider, setProvider] = useState<StorageProvider>(state.settings.storage_provider ?? "sharepoint");
+  const [testing, setTesting] = useState(false);
+  const [testError, setTestError] = useState("");
+
+  async function runTest(form: HTMLFormElement) {
+    if (!live || !testStorage) { notify("Testul conexiunii este disponibil în varianta LIVE."); return; }
+    setTesting(true); setTestError("");
+    try {
+      const data = new FormData(form);
+      notify(await testStorage(state.current_firm_id, provider, {
+        sharepoint_host: String(data.get("sharepoint_host") ?? "").trim(),
+        sharepoint_site_path: String(data.get("sharepoint_site_path") ?? "").trim(),
+        sharepoint_library: String(data.get("sharepoint_library") ?? "").trim(),
+        sharepoint_user: String(data.get("sharepoint_user") ?? "").trim(),
+        onedrive_user: String(data.get("onedrive_user") ?? "").trim(),
+        onedrive_folder_path: String(data.get("onedrive_folder_path") ?? "").trim(),
+      }));
+    }
+    catch (reason) { setTestError((reason as Error).message); }
+    finally { setTesting(false); }
+  }
+
+  return <form onSubmit={async (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const next = mutateState(state, (draft) => {
+      if (!live) {
+        draft.settings.supabase_url = String(data.get("supabase_url"));
+        draft.settings.supabase_publishable_key = String(data.get("supabase_publishable_key"));
+      }
+      draft.settings.global_admin_email = String(data.get("global_admin_email"));
+      draft.settings.storage_provider = provider;
+      if (provider === "sharepoint") {
+        draft.settings.sharepoint_host = String(data.get("sharepoint_host") ?? "").trim();
+        draft.settings.sharepoint_user = String(data.get("sharepoint_user") ?? "").trim();
+        draft.settings.sharepoint_site_path = String(data.get("sharepoint_site_path") ?? "").trim();
+        draft.settings.sharepoint_library = String(data.get("sharepoint_library") ?? "").trim();
+      } else {
+        draft.settings.onedrive_user = String(data.get("onedrive_user") ?? "").trim();
+        draft.settings.onedrive_folder_path = String(data.get("onedrive_folder_path") ?? "").trim();
+      }
+    });
+    await persist(next, live ? "Configurația conexiunilor a fost salvată." : "Configurația conexiunilor a fost salvată local.");
+  }}>
+    <h2>Conexiuni backend</h2>
+    <div className="connection-status"><span><i/>Supabase</span><strong>{live ? "Conectat · producție" : state.settings.supabase_url ? "Configurat" : "Neconfigurat"}</strong></div>
+    {live ? <div className="notice"><ShieldCheck/>URL-ul și cheia publică Supabase sunt încărcate din configurația de deployment. Cheile private nu sunt expuse în browser.</div> : <><label>Supabase Project URL<input name="supabase_url" type="url" defaultValue={state.settings.supabase_url} placeholder="https://…supabase.co"/></label><label>Supabase publishable key<input name="supabase_publishable_key" type="password" defaultValue={state.settings.supabase_publishable_key} autoComplete="off" placeholder="sb_publishable_…"/></label></>}
+    <label>Email Global Administrator<input name="global_admin_email" type="email" defaultValue={state.settings.global_admin_email} placeholder="administrator@firma.ro"/></label>
+    <div className="connection-status sharepoint"><span><i/>Stocare documente</span><strong>{provider === "sharepoint" ? "SharePoint" : "OneDrive"}</strong></div>
+    <label>Backend stocare<select value={provider} onChange={(event) => { setProvider(event.target.value as StorageProvider); setTestError(""); }}><option value="sharepoint">SharePoint</option><option value="onedrive">OneDrive</option></select></label>
+    {provider === "sharepoint" ? <>
+      <label>SharePoint host<input name="sharepoint_host" defaultValue={state.settings.sharepoint_host} required placeholder="companie.sharepoint.com"/></label>
+      <label>Cale site SharePoint<input name="sharepoint_site_path" defaultValue={state.settings.sharepoint_site_path} required placeholder="root sau sites/Audit"/></label>
+      <label>Bibliotecă documente<input name="sharepoint_library" defaultValue={state.settings.sharepoint_library} required placeholder="Documente"/></label>
+      <label>Utilizator Microsoft 365<input name="sharepoint_user" type="email" defaultValue={state.settings.sharepoint_user} required placeholder="utilizator@companie.ro"/></label>
+      <div className="notice"><CircleAlert/>Testul verifică permisiunea aplicației Microsoft Graph asupra site-ului și bibliotecii configurate. Parolele Microsoft nu sunt salvate.</div>
+    </> : <>
+      <label>Cont OneDrive<input name="onedrive_user" type="email" defaultValue={state.settings.onedrive_user} required placeholder="utilizator@outlook.com"/></label>
+      <label>Cale folder OneDrive<input name="onedrive_folder_path" defaultValue={state.settings.onedrive_folder_path} required placeholder="Apps/Portal-Documente"/></label>
+      <div className="notice"><CircleAlert/>OneDrive personal folosește autorizare Microsoft delegată. Client ID, secretul și refresh tokenul sunt păstrate exclusiv în Supabase Secrets.</div>
+    </>}
+    {testError && <div className="error-box">{testError}</div>}
+    <div className="connection-actions"><button className="primary">Salvează conexiunile</button><button type="button" className="secondary" disabled={testing} onClick={(event) => void runTest(event.currentTarget.form!)}>{testing ? "Se testează…" : provider === "sharepoint" ? "Test SharePoint" : "Test OneDrive"}</button></div>
+  </form>;
 }
 
 function SecurityItem({ title, text }: { title: string; text: string }) { return <article><ShieldCheck/><div><strong>{title}</strong><p>{text}</p></div></article>; }
