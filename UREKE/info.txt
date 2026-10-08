@@ -138,9 +138,9 @@ ONEDRIVE_CLIENT_SECRET
 Secretul este necesar atunci când aplicația web schimbă authorization code-ul cu tokenurile OAuth. Microsoft Learn
 
 4. Adaugă permisiunile Graph
-În:
+
 API permissions → Add a permission → Microsoft Graph → Delegated permissions
-adaugă:
+
 Files.ReadWrite
 User.Read
 offline_access
@@ -184,6 +184,236 @@ Result:
 refresh_token
 1.ATkAbV3zJt44mkuBWduwfNhijxl5SA2aG3tAtUVYdz470sngAMk5AA.BQABAwEAAAADAOz_BQD0_0V2b1N0c0FydGlmYWN0cwIAAAAAAKgjaKdnLdYQuo8kB4GgctbZjh2Y54zCjwtlERTMvqlz1fGWXRRg_Vj9UsjGPtdmSfQIdzYO8OyuNe7H2FbPUVstL1Rac1SK33lUCn39c3bazDqMj-u_0tZ4tH7pu5OHHy5fThMpHtNtPEzcvyz5XM90Cl2CbC6iY0RQMQM-NKK1eECahPTUzpHYZR10JuwtQ0D07jmLGjmJ4ceb1mEelAEeJ5HT1Ms8r1O19XBYnSHrY94HiZc84Q87W6Lwtx1qMX_kNw-KWUOqEihMja-TyULeckYD5WB2UCTKObnzrzLC1UJvYrNaDjxRaR2XLMmpFlu4sV5xJqlyLVq6pEi6uXAFkmVNrnd6FVpfrDGw48DV1L-7jlHdDUOBrn76dlOxcn1vsX6AdiQCIUc_AK_kSK4Twp3EDcnVpPejjfEI2T90heiJ9OJkaV3IXbQ7gU4LDrlig4GalFeZrySqWoDd_3Nx8ZRg-n3bb-F7OqPsMOZgp8PpspLxt6R1-BBVDPf1pRzJAzD6-fMYwu6Zyj-0YmeWmQAURu1De-bng7T9-uSqvrA5aF7wiSFs9gY2eac_muSbQAidrrGsb_BZwj2qYZ_12qAZc31NBU5kHmo3PqIDp42p4hzuWr46_qHOictVwuXxHDvJ4akpxT_vtfQFerWEvDXBFlfaGja0qzQu4GgB_0-t13ngl7gR1RKvaLZb6080Qj_HmxZVqbUL28JplEygund6QoKjF8C4G20LQQ-y3r_BKLl8RUdJkgbqGljguID52JgPcnONMiuj4skNZQJtkA9vZ0n4Z9Kb5fkIoIV_x79OxtQfEGvcO04gz--et9hOD0QSQL9RZWOnJVACZW66cWM81d2Z2W3MRAGtEaMeJ4eJ8pYXh-EY1rXt7VWQYIZPgjFRcY1s7KhcUOKjKsQa3eABF0OrrMGKe7cn4EdPkK3FtBTYlDqAFfvBA87BQ476ZtoTdzpoO4QM3YW2Q0uinofAma0W4JUd71S8jBk9EQ_PXstdYvzk05dpUrf7hgin2YHqgiiYaUp9okCVQMrisuJe1Af25QTgb4FUIQVxssNGDtZYnEkn--Ww7aNTyZ8oXSCCwUnPuj1lNF7qYTMEBZeU9vN-Hcagbpn2V6_9Wj9pSHkf3rXuvy92nTiZ7kQR54veElRj_ixvQ1B_5u6hH1vyTxx0QbBQ2VfDW2lH0M_siA--YWB0egiaqyxZq0fKwqnDj96iD-cvrzg7AF2QFG2ACCoRwuQQiWWkI4lz8gwe9InVeNBx_VRJs7fQEYyQFRwCQT5jczHLtcxICiAlIdzwTbzt7XMODmMjhiHv66lzgbDE6om9uC4Mxa2OL_uPPtOniGmm98lqTS8b2dAhybTxfzG0HWl0jHSlS7X2m7vBOtwcpCpokk09LLDjryKUd9oqJYWpVUfjYgeIZ_9L2r_V-wj_ezXEUzAZRYdagF9j5Uv6tAp-I2tj6-E
 
+----------------------------------------------------------------------------------------------------------------------
+
+C)Sharepoint
+
+Entra ID->App Regitrations->Portal-Documente
+
+Display name				Portal-Documente
+Directory (tenant) ID		220c4cc7-8672-4bd9-ad5d-6b6a45f9e56c
+Application (client) ID 	80a07022-5b43-42bd-944c-25c963d0fdbd
+Client secrets (values,not ID):
+Client secret				kCJ8Q~T3Mvbth5WW~C5bHLiVtQmOJaUPaALVqcbG
+sites/Especial				JAR8Q~O0BQo13cy14FhiWZRio971HwNujqil4chZ
+
+Authentication
+Web							https://documente.celentis.ro
+
+API / Permissions -> Microsoft Graph -> Application permision ->		
+Sites.Selected + pasi Graph	de dat acces pentru site-ul ../sites/Celentis
+	Sites.FullControl.All -> doar daca nu merge Sites.Selected 
+
+Pasi Microsoft Graph (https://developer.microsoft.com/en-us/graph/graph-explorer)
+
+Pentru site-ul: mariumsoft.sharepoint.com/sites/Celentis,ruleaza :
+
+GET 
+https://graph.microsoft.com/v1.0/sites/mariumsoft.sharepoint.com:/sites/Celentis
+>
+{
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#sites/$entity",
+    "@microsoft.graph.tips": "Use $select to choose only the properties your app needs, as this can lead to performance improvements. For example: GET sites('<key>')/microsoft.graph.getByPath(path=<key>)?$select=displayName,error",
+    "createdDateTime": "2026-10-05T18:34:52.387Z",
+    "description": "Documentele despre activitatea noastra de Audit",
+    "id": "mariumsoft.sharepoint.com,3d57b0b8-8061-4ee8-bfef-82283f8dda8b,f3dee3c1-8f9d-4759-b3d3-a474c1bca42a",
+    "lastModifiedDateTime": "2026-10-05T20:00:24Z",
+    "name": "Audit",
+    "webUrl": "https://mariumsoft.sharepoint.com/sites/Audit",
+    "displayName": "Audit",
+    "root": {},
+    "siteCollection": {
+        "hostname": "mariumsoft.sharepoint.com"
+    }
+}
+>
+POST 
+https://graph.microsoft.com/v1.0/sites/{id}/permissions
+{
+  "roles": ["write"],
+  "grantedToIdentities": 
+  [
+    {
+      "application": 
+	  {
+        "id": "Application(client)ID",
+		"displayName": "Portal-Documente"
+      }
+    }
+  ]
+}
+>
+POST 
+https://graph.microsoft.com/v1.0/sites/mariumsoft.sharepoint.com,3d57b0b8-8061-4ee8-bfef-82283f8dda8b,f3dee3c1-8f9d-4759-b3d3-a474c1bca42a/permissions
+
+{
+  "roles": ["write"],
+  "grantedToIdentities": 
+  [
+    {
+      "application": 
+	  {
+        "id": "80a07022-5b43-42bd-944c-25c963d0fdbd",
+        "displayName": "Portal-Documente"
+      }
+    }
+  ]
+}
+>
+{
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#sites('mariumsoft.sharepoint.com%2C3d57b0b8-8061-4ee8-bfef-82283f8dda8b%2Cf3dee3c1-8f9d-4759-b3d3-a474c1bca42a')/permissions/$entity",
+    "id": "aTowaS50fG1zLnNwLmV4dHw4MGEwNzAyMi01YjQzLTQyYmQtOTQ0Yy0yNWM5NjNkMGZkYmRAMjIwYzRjYzctODY3Mi00YmQ5LWFkNWQtNmI2YTQ1ZjllNTZj",
+    "roles": [
+        "write"
+    ],
+    "grantedToIdentitiesV2": [
+        {
+            "application": {
+                "displayName": "Portal-Documente",
+                "id": "80a07022-5b43-42bd-944c-25c963d0fdbd"
+            }
+        }
+    ],
+    "grantedToIdentities": [
+        {
+            "application": {
+                "displayName": "Portal-Documente",
+                "id": "80a07022-5b43-42bd-944c-25c963d0fdbd"
+            }
+        }
+    ]
+}
+
+Verificare Site.Selected in token:
+
+1.PowerShell 
+
+$tenantId = "220c4cc7-8672-4bd9-ad5d-6b6a45f9e56c"
+$clientId = "80a07022-5b43-42bd-944c-25c963d0fdbd"
+$clientSecret = "kCJ8Q~T3Mvbth5WW~C5bHLiVtQmOJaUPaALVqcbG"
+
+$body = @{
+    client_id     = $clientId
+    scope         = "https://graph.microsoft.com/.default"
+    client_secret = $clientSecret
+    grant_type    = "client_credentials"
+}
+
+$response = Invoke-RestMethod `
+    -Method Post `
+    -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" `
+    -ContentType "application/x-www-form-urlencoded" `
+    -Body $body
+
+$response
+$response.access_token | Set-Clipboard
+
+2. http://jwt.ms  ->lipește tokenul în câmpul de sus si Decodeaza-l
+
+Enter token below (it never leaves your browser):
+eyJ0eXAiOiJKV1QiLCJub25jZSI6IjIyWFljZU9yRXM0U2ZBbmtKVjJFaU1nTG1lV2RVN1hVYUNGYnhSNTRRODQiLCJhbGciOiJSUzI1NiIsIng1dCI6ImRndlNEdks4QTVLeUt5cHB3MWRBd1RYRDNDQSIsImtpZCI6ImRndlNEdks4QTVLeUt5cHB3MWRBd1RYRDNDQSJ9.eyJhdWQiOiJodHRwczovL2dyYXBoLm1pY3Jvc29mdC5jb20iLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC8yMjBjNGNjNy04NjcyLTRiZDktYWQ1ZC02YjZhNDVmOWU1NmMvIiwiaWF0IjoxNzkxMzQ1ODA4LCJuYmYiOjE3OTEzNDU4MDgsImV4cCI6MTc5MTM0OTcwOCwiYWNycyI6WyJwZmRyIl0sImFpbyI6IkFTUUEyLzhlQUFBQTlBWTY0ekhyTGwzbHBkQ0VNYlhDdWF2NnlpQzV4bnR6WWNQMmtOWkxjeGc9IiwiYXBwX2Rpc3BsYXluYW1lIjoiUG9ydGFsLURvY3VtZW50ZSIsImFwcGlkIjoiODBhMDcwMjItNWI0My00MmJkLTk0NGMtMjVjOTYzZDBmZGJkIiwiYXBwaWRhY3IiOiIxIiwiaWRwIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvMjIwYzRjYzctODY3Mi00YmQ5LWFkNWQtNmI2YTQ1ZjllNTZjLyIsImlkdHlwIjoiYXBwIiwib2lkIjoiMzIyYjM4NjItMWJkZS00OTZmLTliOGEtN2U2YWY2ZDFjZDUxIiwicmgiOiIxLkFSTUJ4MHdNSW5LRzJVdXRYV3RxUmZubGJBTUFBQUFBQUFBQXdBQUFBQUFBQUFBQUFBQVRBUS4iLCJyb2xlcyI6WyJTaXRlcy5TZWxlY3RlZCIsIlNpdGVzLkZ1bGxDb250cm9sLkFsbCJdLCJzdWIiOiIzMjJiMzg2Mi0xYmRlLTQ5NmYtOWI4YS03ZTZhZjZkMWNkNTEiLCJ0ZW5hbnRfcmVnaW9uX3Njb3BlIjoiRVUiLCJ0aWQiOiIyMjBjNGNjNy04NjcyLTRiZDktYWQ1ZC02YjZhNDVmOWU1NmMiLCJ1dGkiOiJ1Tlk3TDJ4OFBFQ1RCV1ZjN3dQYkFBIiwidmVyIjoiMS4wIiwid2lkcyI6WyIwOTk3YTFkMC0wZDFkLTRhY2ItYjQwOC1kNWNhNzMxMjFlOTAiXSwieG1zX2FjZCI6MTc5MTIyOTM4NSwieG1zX2FjdF9mY3QiOiIzIDkiLCJ4bXNfYXVkX2d1aWQiOiIwMDAwMDAwMy0wMDAwLTAwMDAtYzAwMC0wMDAwMDAwMDAwMDAiLCJ4bXNfZnRkIjoiZTE5b055ZEtQSlZMSVhhT3Vfc3psUVR6WHNaRjExdy1MVlp4ZThqYW9qQUJaWFZ5YjNCbGQyVnpkQzFrYzIxeiIsInhtc19pZHJlbCI6IjMwIDciLCJ4bXNfcGZ0ZXhwIjoxNzkxNDM2MTA4LCJ4bXNfcmQiOiIwLjQyTGpZQkppbXN3a0pNTEJMaVRRMzVXOHQxVjJpdGV5UVAzX2kxNWVzUkVTNGVBVUV1aFlGRFZKOHR0MDd5bTIwVlpmbmd1R0M0bHdjQWdKTUROQXdBRW9MU1RDd1MwazRQcnlrYW5ybkh0djVOZHFyT2pnanRnS0FBIiwieG1zX3N1Yl9mY3QiOiIzIDkiLCJ4bXNfdGNkdCI6MTc5MTIyMzY3NCwieG1zX3RkYnIiOiJFVSIsInhtc190bnRfZmN0IjoiMTIgMyJ9.OUEq4VtY5JWjDISMwIeUCfJJRbeYHG0bDc5256HLhszjAARtVYu8O2_Mq_C0F6teNVMLsZ9xMGSJBqqip2nPEhfl2Qx_wtV60JS1iVqBBfauBH9yqrffvZY9fdIxnCQEGaP1CD8jK9TWbNchwfT8XObXaA7-C_EhqoCU5AlzFBh6A4K4iAHF9AfHpdOCH5zcvGIF2YnxbwW9l9c9hKWPzSLZrs4wgyEW0C_H-zMpOlo9tUuDo5ct8_5b-AoI_AMhf1T1w0wWMjEmyOC5sgu7KDaJcl8E3dd9E4BZ7l0a_L0P-PJ6yXNlWCdDifC9srpCuz0o-upjI-QkdxPRM6KWtA
+This token was issued by Azure Active Directory.
+
+Decoded Token
+
+Claims
+{
+  "typ": "JWT",
+  "nonce": "22XYceOrEs4SfAnkJV2EiMgLmeWdU7XUaCFbxR54Q84",
+  "alg": "RS256",
+  "x5t": "dgvSDvK8A5KyKyppw1dAwTXD3CA",
+  "kid": "dgvSDvK8A5KyKyppw1dAwTXD3CA"
+}.{
+  "aud": "https://graph.microsoft.com",
+  "iss": "https://sts.windows.net/220c4cc7-8672-4bd9-ad5d-6b6a45f9e56c/",
+  "iat": 1791345808,
+  "nbf": 1791345808,
+  "exp": 1791349708,
+  "acrs": [
+    "pfdr"
+  ],
+  "aio": "ASQA2/8eAAAA9AY64zHrLl3lpdCEMbXCuav6yiC5xntzYcP2kNZLcxg=",
+  "app_displayname": "Portal-Documente",
+  "appid": "80a07022-5b43-42bd-944c-25c963d0fdbd",
+  "appidacr": "1",
+  "idp": "https://sts.windows.net/220c4cc7-8672-4bd9-ad5d-6b6a45f9e56c/",
+  "idtyp": "app",
+  "oid": "322b3862-1bde-496f-9b8a-7e6af6d1cd51",
+  "rh": "1.ARMBx0wMInKG2UutXWtqRfnlbAMAAAAAAAAAwAAAAAAAAAAAAAATAQ.",
+  "roles": [
+    "Sites.Selected",
+  ],
+  "sub": "322b3862-1bde-496f-9b8a-7e6af6d1cd51",
+  "tenant_region_scope": "EU",
+  "tid": "220c4cc7-8672-4bd9-ad5d-6b6a45f9e56c",
+  "uti": "uNY7L2x8PECTBWVc7wPbAA",
+  "ver": "1.0",
+  "wids": [
+    "0997a1d0-0d1d-4acb-b408-d5ca73121e90"
+  ],
+  "xms_acd": 1791229385,
+  "xms_act_fct": "3 9",
+  "xms_aud_guid": "00000003-0000-0000-c000-000000000000",
+  "xms_ftd": "e19oNydKPJVLIXaOu_szlQTzXsZF11w-LVZxe8jaojABZXVyb3Bld2VzdC1kc21z",
+  "xms_idrel": "30 7",
+  "xms_pftexp": 1791436108,
+  "xms_rd": "0.42LjYBJimswkJMLBLiTQ35W8t1V2iteyQP3_i15esRES4eAUEuhYFDVJ8tt07ym20VZfnguGC4lwcAgJMDNAwAEoLSTCwS0k4PrykanrnHtv5NdqrOjgjtgKAA",
+  "xms_sub_fct": "3 9",
+  "xms_tcdt": 1791223674,
+  "xms_tdbr": "EU",
+  "xms_tnt_fct": "12 3"
+}.[Signature]
+
+
+3.Verificare acces site cu tokenul respectiv:
+
+Putem testa chiar Graph cu tokenul respectiv.După ce ai obținut $response, fără să expui tokenul nicăieri, rulează:
+
+PowerShell:
+
+$headers = @{
+    Authorization = "Bearer $($response.access_token)"
+}
+
+Invoke-RestMethod `
+    -Method Get `
+    -Uri "https://graph.microsoft.com/v1.0/sites/mariumsoft.sharepoint.com:/sites/Celentis" `
+    -Headers $headers
+
+
+Dacă aplicația are drepturi, vei primi informațiile site-ului, aproximativ:
+
+@odata.context       : https://graph.microsoft.com/v1.0/$metadata#sites/$entity
+createdDateTime      : 2026-10-05T18:34:52.387Z
+description          : Documentele despre activitatea noastra de Audit
+id                   : mariumsoft.sharepoint.com,3d57b0b8-8061-4ee8-bfef-82283f8dda8b,f3dee3c1-8f9d-4759-b3d3-a474c1bca42a
+lastModifiedDateTime : 2026-10-07T03:51:59Z
+name                 : Celentis
+webUrl               : https://mariumsoft.sharepoint.com/sites/Celentis
+displayName          : Celentis Audit SRL
+root                 :
+siteCollection       : @{hostname=mariumsoft.sharepoint.com}
+
+4.Verificare biblioteca Portal-Documente :
+
+Testul și mai interesant: biblioteca ta Portal-Documente.După ce primul GET merge, putem interoga drive-urile/document libraries:
+
+PowerShell:
+
+$drives = Invoke-RestMethod `
+    -Method Get `
+    -Uri "https://graph.microsoft.com/v1.0/sites/$siteId/drives" `
+    -Headers $headers
+$drives.value | Select-Object id, name, driveType, webUrl
+
+
+Ar trebui să vezi între biblioteci ceva precum: name : Portal-Documente
+
+id                                                                 name             driveType       webUrl
+--                                                                 ----             ---------       ------
+b!uLBXPWGA6E6_74IoP43ai8Hj3vOdj1lHs9OkdMG8pCq74CQxNBeAS4RYE9hQzpZS Documents        documentLibrary https://mariumsoft.sharepoint.com/sites/Celentis/Sha...
+b!uLBXPWGA6E6_74IoP43ai8Hj3vOdj1lHs9OkdMG8pCp-55jhClvlQ4liK4aVxuI0 Portal-Documente documentLibrary https://mariumsoft.sharepoint.com/sites/Celentis/Por...
+
 =======================================================================================================
 GitHub:
 https://github.com/urechemm/portal-documente/archive/d75bc359af90b3f254e52e21112a1c1466cb1b7f.zip
@@ -212,44 +442,45 @@ Client secret ID:			58ba28ca-c8bb-4c08-bc2e-e60ac18901ba
 ======================================================================================================
 Microsoft Graph 
 
-GET https://graph.microsoft.com/v1.0/sites/root?$select=id,webUrl
-
-    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#sites(id,webUrl)/$entity",
-    "id": "celentis.sharepoint.com,8c89a8b5-a547-429d-9d04-c8779ed3ad9e,2ce67eac-d589-4dfd-a9d8-086a526e4242",
-    "webUrl": "https://celentis.sharepoint.com"
-}
-
-POST 
-https://graph.microsoft.com/v1.0/sites/celentis.sharepoint.com,8c89a8b5-a547-429d-9d04-c8779ed3ad9e,2ce67eac-d589-4dfd-a9d8-086a526e4242/permissions
-
+GET 
+https://graph.microsoft.com/v1.0/sites/mariumsoft.sharepoint.com
+Result:
 {
-  "roles": ["write"],
-  "grantedToIdentities": [
-    {
-      "application": {
-        "id": "0d487919-1b9a-407b-b545-58773e3bd2c9",
-        "displayName": "Portal Documente Backend"
-      }
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#sites/$entity",
+    "@microsoft.graph.tips": "Use $select to choose only the properties your app needs, as this can lead to performance improvements. For example: GET sites('<key>')?$select=displayName,error",
+    "createdDateTime": "2026-10-05T18:13:19.95Z",
+    "description": "",
+    "id": "mariumsoft.sharepoint.com,0bd6c53d-a1aa-4743-a920-c2c478bfe094,b4e62818-8145-4381-bb5e-42c0d389cb66",
+    "lastModifiedDateTime": "2026-10-06T18:53:57Z",
+    "name": "",
+    "webUrl": "https://mariumsoft.sharepoint.com",
+    "displayName": "MariumSoft SRL",
+    "root": {},
+    "siteCollection": {
+        "hostname": "mariumsoft.sharepoint.com"
     }
-  ]
 }
-
-POST
-https://graph.microsoft.com/v1.0/sites/celentis.sharepoint.com,8c89a8b5-a547-429d-9d04-c8779ed3ad9e,2ce67eac-d589-4dfd-a9d8-086a526e4242/permissions
+GET 
+https://graph.microsoft.com/v1.0/sites/mariumsoft.sharepoint.com:/sites/Celentis
+Result:
 {
-  "roles": ["write"],
-  "grantedToIdentities": [
-    {
-      "application": {
-        "id": "0d487919-1b9a-407b-b545-58773e3bd2c9",
-        "displayName": "Portal Documente Backend"
-      }
+    "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#sites/$entity",
+    "@microsoft.graph.tips": "Use $select to choose only the properties your app needs, as this can lead to performance improvements. For example: GET sites('<key>')/microsoft.graph.getByPath(path=<key>)?$select=displayName,error",
+    "createdDateTime": "2026-10-05T18:34:52.387Z",
+    "description": "",
+    "id": "mariumsoft.sharepoint.com,3d57b0b8-8061-4ee8-bfef-82283f8dda8b,f3dee3c1-8f9d-4759-b3d3-a474c1bca42a",
+    "lastModifiedDateTime": "2026-10-07T05:02:12Z",
+    "name": "Celentis",
+    "webUrl": "https://mariumsoft.sharepoint.com/sites/Celentis",
+    "displayName": "Celentis Audit SRL",
+    "root": {},
+    "siteCollection": {
+        "hostname": "mariumsoft.sharepoint.com"
     }
-  ]
 }
 
 ======================================================================================================
-Settings - Sharepoint
+Portal-Documente Settings - Sharepoint
 
 SharePoint host: celentis.sharepoint.com
 Cale site SharePoint: root
@@ -263,4 +494,19 @@ Cale folder OneDrive: Apps/Portal-Documente
 Settings - OneDrive business
 Cont OneDrive: mihai.ureche@celentis.ro
 Cale folder OneDrive: Apps/Portal-Documente
-
+======================================================================================================
+Sharepoint pages:
+| Pagina | Rol |
+ `/_layouts/15/user.aspx| Site Permissions / grupuri SharePoint
+ `/_layouts/15/people.aspx?MembershipGroupId=0| All People
+ `/_layouts/15/settings.aspx| Site Settings
+ `/_layouts/15/viewlsts.aspx| Site Contents
+ `/_layouts/15/mngsiteadmin.aspx| Site Collection Administrators
+ `/_layouts/15/permsetup.aspx| configurarea grupurilor Owners / Members / Visitors
+ `/_layouts/15/role.aspx| Permission Levels
+ `/_layouts/15/useredit.aspx| informații despre un user/principa
+ `/_layouts/15/groups.aspx| management grupuri SharePoint, în anumite contexte
+ `/_layouts/15/people.aspx?MembershipGroupId=<ID>| membrii unui anumit SharePoint Group
+ `/_layouts/15/recyclebin.aspx| Recycle Bin
+ `/_layouts/15/guestaccess.aspx| anumite fluxuri de sharing/guest access
+ `/_layouts/15/share.aspx| interfața clasică de sharing, în anumite contexte

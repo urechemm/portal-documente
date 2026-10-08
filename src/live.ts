@@ -140,6 +140,13 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
   await upsert("audit_firm_users", changedRows(before.memberships, after.memberships));
   await upsert("entities", changedRows(before.entities, after.entities));
   await upsert("engagements", changedRows(before.engagements, after.engagements));
+  const removedEngagementUsers = before.engagement_users.filter((old) =>
+    old.audit_firm_id === after.current_firm_id &&
+    !after.engagement_users.some((item) => item.engagement_id === old.engagement_id && item.user_id === old.user_id));
+  for (const row of removedEngagementUsers) {
+    const { error } = await client.from("engagement_users").delete().eq("engagement_id", row.engagement_id).eq("user_id", row.user_id);
+    if (error) fail("Eliminarea membrului din misiune a eșuat", error);
+  }
   await upsert("engagement_users", after.engagement_users.filter((item) => !before.engagement_users.some((old) => old.engagement_id === item.engagement_id && old.user_id === item.user_id)));
   // New requests must not use ON CONFLICT: its SELECT checks can invoke
   // can_access_request(id) before the new request exists in the database.

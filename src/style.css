@@ -186,6 +186,8 @@ tbody tr:hover { background: #f9fcfd; }
 .completion > div { display: flex; justify-content: space-between; font-size: .75rem; }
 .engagement-card > footer { margin: 15px -20px 0; padding: 13px 20px; border-top: 1px solid var(--line); background: #f7fbfd; display: flex; align-items: center; justify-content: space-between; font-size: .75rem; color: var(--muted); border-radius: 0 0 12px 12px; }
 .engagement-card > footer button { display: flex; align-items: center; border: 0; background: transparent; color: #087fb9; font-weight: 700; }
+.engagement-actions { display: flex; align-items: center; gap: 16px; }
+.engagement-actions button { gap: 5px; }
 .activity-panel { max-width: 980px; }
 .activity-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
 .activity-summary span { padding: 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); }
