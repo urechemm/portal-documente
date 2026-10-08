@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, FileCheck2, LockKeyhole, ShieldCheck } from "lucide-react";
 import App from "./App";
-import { createLiveClient, getLiveStorageLink, inviteLiveUser, loadLiveState, loadRuntimeConfig, persistLiveDelta, saveLiveStorageCredential, testLiveStorage, uploadLiveDocument, type RuntimeConfig } from "./live";
+import { createLiveClient, getLiveMfaEnabled, getLiveStorageLink, inviteLiveUser, loadLiveState, loadRuntimeConfig, persistLiveDelta, saveLiveStorageCredential, setLiveMfaEnabled, testLiveStorage, uploadLiveDocument, type RuntimeConfig } from "./live";
 import type { State } from "./domain";
 
 export default function Root() {
@@ -18,7 +18,7 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
   const [signedIn, setSignedIn] = useState(false);
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState("");
-  const [mfa, setMfa] = useState<{ mode: "challenge" | "enroll"; factorId: string; qr?: string } | null>(null);
+  const [mfa, setMfa] = useState<{ mode: "challenge" | "enroll"; factorId: string; email: string; qr?: string } | null>(null);
   const [mustSetPassword, setMustSetPassword] = useState(false);
 
   const refresh = async (firm?: string | null) => {
@@ -29,24 +29,26 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
   const secureSession = async () => {
     const { data: userData, error: userError } = await client.auth.getUser();
     if (userError) throw userError;
+    const email = userData.user?.email ?? "";
     if (userData.user?.user_metadata?.must_set_password === true) {
       setMustSetPassword(true);
       setMfa(null);
       return;
     }
     setMustSetPassword(false);
+    if (!await getLiveMfaEnabled(client)) { setMfa(null); await refresh(); return; }
     const { data: level, error: levelError } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
     if (levelError) throw levelError;
     if (level.currentLevel === "aal2") { setMfa(null); await refresh(); return; }
     const { data: factors, error: factorsError } = await client.auth.mfa.listFactors();
     if (factorsError) throw factorsError;
     const verified = factors.totp.find((factor) => factor.status === "verified");
-    if (verified) { setMfa({ mode: "challenge", factorId: verified.id }); return; }
+    if (verified) { setMfa({ mode: "challenge", factorId: verified.id, email }); return; }
     const pending = factors.all.find((factor) => factor.factor_type === "totp" && factor.status !== "verified");
     if (pending) { await client.auth.mfa.unenroll({ factorId: pending.id }); }
     const { data: enrolled, error: enrollError } = await client.auth.mfa.enroll({ factorType: "totp", friendlyName: "Portal Documente" });
     if (enrollError) throw enrollError;
-    setMfa({ mode: "enroll", factorId: enrolled.id, qr: enrolled.totp.qr_code });
+    setMfa({ mode: "enroll", factorId: enrolled.id, email, qr: enrolled.totp.qr_code });
   };
   useEffect(() => {
     void client.auth.getSession().then(({ data }) => { setSignedIn(!!data.session); setSessionReady(true); if (data.session) void secureSession().catch((reason) => setError((reason as Error).message)); });
@@ -97,7 +99,7 @@ function LiveRoot({ config }: { config: RuntimeConfig }) {
   if (mustSetPassword) return <SetPasswordGate client={client} error={error} setError={setError} completed={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (mfa) return <MfaGate client={client} factor={mfa} error={error} setError={setError} verified={() => void secureSession().catch((reason) => setError((reason as Error).message))}/>;
   if (!state) return <div className="loading"><ShieldCheck/><h2>{error || "Se încarcă spațiul de audit…"}</h2>{error && <button className="secondary" onClick={() => void refresh()}>Reîncearcă</button>}</div>;
-  return <App initialState={state} live persist={async (before, after) => { const next = await persistLiveDelta(client, before, after); setState(next); return next; }} reload={async (firm) => { const next = await loadLiveState(client, firm); setState(next); return next; }} uploadLive={(requestId, file, description, period, relativePath) => uploadLiveDocument(client, requestId, file, description, period, relativePath)} openStorageLink={(requestId, documentId) => getLiveStorageLink(client, requestId, documentId)} testStorage={(auditFirmId, provider, configuration) => testLiveStorage(client, auditFirmId, provider, configuration)} saveStorageCredential={(auditFirmId, provider, credentials) => saveLiveStorageCredential(client, auditFirmId, provider, credentials)} inviteLive={(auditFirmId, name, email, role) => inviteLiveUser(client, auditFirmId, name, email, role)} logout={() => client.auth.signOut()}/>;
+  return <App initialState={state} live persist={async (before, after) => { const next = await persistLiveDelta(client, before, after); setState(next); return next; }} reload={async (firm) => { const next = await loadLiveState(client, firm); setState(next); return next; }} uploadLive={(requestId, file, description, period, relativePath) => uploadLiveDocument(client, requestId, file, description, period, relativePath)} openStorageLink={(requestId, documentId) => getLiveStorageLink(client, requestId, documentId)} testStorage={(auditFirmId, provider, configuration) => testLiveStorage(client, auditFirmId, provider, configuration)} saveStorageCredential={(auditFirmId, provider, credentials) => saveLiveStorageCredential(client, auditFirmId, provider, credentials)} configureMfa={(enabled) => setLiveMfaEnabled(client, enabled)} inviteLive={(auditFirmId, name, email, role) => inviteLiveUser(client, auditFirmId, name, email, role)} logout={() => client.auth.signOut()}/>;
 }
 
 function SetPasswordGate({ client, error, setError, completed }: { client: ReturnType<typeof createLiveClient>; error: string; setError: (value: string) => void; completed: () => void }) {
@@ -119,8 +121,10 @@ function SetPasswordGate({ client, error, setError, completed }: { client: Retur
   return <div className="mfa-page"><section className="mfa-card"><span className="brand-icon"><LockKeyhole/></span><div className="eyebrow">PRIMA AUTENTIFICARE</div><h1>Configurează parola</h1><p>Alege o parolă nouă pentru accesările viitoare ale portalului.</p><form onSubmit={savePassword}><label>Parolă nouă<input name="password" type="password" minLength={12} autoComplete="new-password" required/></label><label>Confirmă parola<input name="confirmation" type="password" minLength={12} autoComplete="new-password" required/></label><button className="primary" disabled={busy}>{busy ? "Se salvează…" : "Salvează și continuă"}</button></form>{error && <div className="error-box">{error}</div>}</section></div>;
 }
 
-function MfaGate({ client, factor, error, setError, verified }: { client: ReturnType<typeof createLiveClient>; factor: { mode: "challenge" | "enroll"; factorId: string; qr?: string }; error: string; setError: (value: string) => void; verified: () => void }) {
+function MfaGate({ client, factor, error, setError, verified }: { client: ReturnType<typeof createLiveClient>; factor: { mode: "challenge" | "enroll"; factorId: string; email: string; qr?: string }; error: string; setError: (value: string) => void; verified: () => void }) {
   const [busy, setBusy] = useState(false);
+  const codeInput = useRef<HTMLInputElement>(null);
+  useEffect(() => { codeInput.current?.focus(); }, [factor.factorId]);
   async function verify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError("");
     const code = String(new FormData(event.currentTarget).get("code") ?? "").replace(/\s/g, "");
@@ -128,7 +132,7 @@ function MfaGate({ client, factor, error, setError, verified }: { client: Return
     if (error) setError("Codul de autentificare nu este valid."); else verified();
     setBusy(false);
   }
-  return <div className="mfa-page"><section className="mfa-card"><span className="brand-icon"><ShieldCheck/></span><div className="eyebrow">AUTENTIFICARE MULTIFACTOR</div><h1>{factor.mode === "enroll" ? "Protejează contul" : "Confirmă autentificarea"}</h1>{factor.mode === "enroll" ? <><p>Scanează codul QR cu Microsoft Authenticator, Google Authenticator sau o aplicație TOTP compatibilă.</p>{factor.qr && <img src={factor.qr} alt="Cod QR pentru activarea MFA"/>}</> : <p>Introdu codul de șase cifre din aplicația de autentificare.</p>}<form onSubmit={verify}><label>Cod de verificare<input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required placeholder="000000"/></label><button className="primary" disabled={busy}>{busy ? "Se verifică…" : "Continuă"}</button></form>{error && <div className="error-box">{error}</div>}<button className="text-button" onClick={() => void client.auth.signOut()}>Deconectare</button></section></div>;
+  return <div className="mfa-page"><section className="mfa-card"><span className="brand-icon"><ShieldCheck/></span><div className="eyebrow">AUTENTIFICARE MULTIFACTOR</div><h1>{factor.mode === "enroll" ? "Protejează contul" : "Confirmă autentificarea"}</h1><p className="mfa-email">{factor.email}</p>{factor.mode === "enroll" ? <><p>Scanează codul QR cu Microsoft Authenticator, Google Authenticator sau o aplicație TOTP compatibilă.</p>{factor.qr && <img src={factor.qr} alt="Cod QR pentru activarea MFA"/>}</> : <p>Introdu codul de șase cifre din aplicația de autentificare.</p>}<form onSubmit={verify}><label>Cod de verificare<input ref={codeInput} autoFocus name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required placeholder="000000"/></label><button className="primary" disabled={busy}>{busy ? "Se verifică…" : "Continuă"}</button></form>{error && <div className="error-box">{error}</div>}<button className="text-button" onClick={() => void client.auth.signOut()}>Deconectare</button></section></div>;
 }
 
 function Login({ client, error, setError }: { client: ReturnType<typeof createLiveClient>; error: string; setError: (value: string) => void }) {

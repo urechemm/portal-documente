@@ -28,6 +28,17 @@ export const createLiveClient = (config: RuntimeConfig) =>
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
 
+export async function getLiveMfaEnabled(client: SupabaseClient): Promise<boolean> {
+  const { data, error } = await client.rpc("is_mfa_enabled");
+  if (error) fail("Starea MFA nu a putut fi citită", error);
+  return data !== false;
+}
+
+export async function setLiveMfaEnabled(client: SupabaseClient, enabled: boolean): Promise<void> {
+  const { error } = await client.rpc("set_mfa_enabled", { p_enabled: enabled });
+  if (error) fail("Setarea MFA nu a putut fi salvată", error);
+}
+
 function fail(message: string, error?: { message?: string } | null): never {
   throw new Error(error?.message ? `${message}: ${error.message}` : message);
 }
@@ -57,7 +68,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
 
   const [profilesResult, membershipsResult, firmsResult, adminResult] = await Promise.all([
     client.from("profiles").select("id,name,email"),
-    client.from("audit_firm_users").select("id,audit_firm_id,user_id,role,active").eq("active", true),
+    client.from("audit_firm_users").select("id,audit_firm_id,user_id,role,active"),
     client.from("audit_firms").select("id,name,code,cui,email,phone,website,address,active").order("name"),
     client.from("global_admins").select("user_id").eq("user_id", user.id).maybeSingle(),
   ]);
@@ -65,7 +76,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   if (membershipsResult.error) fail("Apartenențele nu au putut fi încărcate", membershipsResult.error);
   if (firmsResult.error) fail("Firmele nu au putut fi încărcate", firmsResult.error);
   const memberships = membershipsResult.data ?? [];
-  const allowed = new Set(memberships.filter((item) => item.user_id === user.id).map((item) => item.audit_firm_id));
+  const allowed = new Set(memberships.filter((item) => item.user_id === user.id && item.active).map((item) => item.audit_firm_id));
   const firms = (firmsResult.data ?? []).filter((item) => allowed.has(item.id) || !!adminResult.data);
   const activeFirms = firms.filter((item) => item.active);
   const remembered = requestedFirm ?? sessionStorage.getItem("portal-live-firm");
@@ -88,8 +99,8 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
 
   const baseSettings: Settings = {
     supabase_url: "", supabase_publishable_key: "", global_admin_email: "",
-    storage_provider: "sharepoint", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente",
-    onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7,
+    storage_provider: "sharepoint", sharepoint_host: "", sharepoint_site_path: "", sharepoint_library: "Documente",
+    onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7, mfa_enabled: true,
   };
   const savedSettings = (settings.data?.data ?? {}) as Record<string, unknown>;
   const legacyOneDriveType = savedSettings.onedrive_account_type === "business" ? "business" : "personal";
@@ -98,7 +109,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
     : (["sharepoint", "onedrive_personal", "onedrive_business"].includes(String(savedSettings.storage_provider))
       ? savedSettings.storage_provider as StorageProvider
       : "sharepoint");
-  const normalizedSettings = { ...baseSettings, ...savedSettings, storage_provider: normalizedProvider } as Settings;
+  const normalizedSettings = { ...baseSettings, ...savedSettings, storage_provider: normalizedProvider, mfa_enabled: await getLiveMfaEnabled(client) } as Settings;
   if (savedSettings.storage_provider === "onedrive") {
     if (legacyOneDriveType === "personal") {
       normalizedSettings.onedrive_personal_user = String(savedSettings.onedrive_user ?? "");
@@ -158,7 +169,7 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
     if (!row.client_owner_id || !after.memberships.some((item) =>
       item.audit_firm_id === engagement.audit_firm_id && item.user_id === row.client_owner_id && item.active && item.role === "client"))
       throw new Error("Selectați un Client activ din firma de audit a misiunii.");
-    return { ...row, audit_firm_id: engagement.audit_firm_id };
+    return { ...row, audit_firm_id: engagement.audit_firm_id, created_by: row.created_by ?? after.current_user_id };
   });
   const newRequests = requestChanges.filter((row) => !existingRequestIds.has(row.id));
   if (newRequests.length) {
@@ -173,7 +184,7 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
   }
   await upsert("comments", changedRows(before.comments, after.comments));
   if (JSON.stringify(before.settings) !== JSON.stringify(after.settings)) {
-    const { supabase_url: _url, supabase_publishable_key: _key, ...safeSettings } = after.settings;
+    const { supabase_url: _url, supabase_publishable_key: _key, mfa_enabled: _mfa, sharepoint_user: _legacySharePointUser, ...safeSettings } = after.settings as Settings & { sharepoint_user?: string };
     const { error } = await client.from("app_settings").upsert({ audit_firm_id: after.current_firm_id, data: safeSettings, updated_at: new Date().toISOString() });
     if (error) fail("Salvarea setărilor a eșuat", error);
   }

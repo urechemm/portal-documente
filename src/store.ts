@@ -65,10 +65,10 @@ export function addComment(state: State, requestId: string, body: string) {
   });
 }
 
-export function addRequest(state: State, request: Omit<PbcRequest, "id" | "audit_firm_id" | "created_at" | "updated_at" | "not_applicable_reason">) {
+export function addRequest(state: State, request: Omit<PbcRequest, "id" | "audit_firm_id" | "created_by" | "created_at" | "updated_at" | "not_applicable_reason">) {
   return mutateState(state, (draft) => {
     const at = new Date().toISOString();
-    draft.requests.push({ ...request, id: uid(), audit_firm_id: draft.current_firm_id, not_applicable_reason: "", created_at: at, updated_at: at });
+    draft.requests.push({ ...request, id: uid(), audit_firm_id: draft.current_firm_id, created_by: draft.current_user_id, not_applicable_reason: "", created_at: at, updated_at: at });
     draft.events.unshift(event(draft, null, "REQUEST_CREATED", `${request.code} · ${request.title}`));
   });
 }

@@ -75,6 +75,7 @@ export interface PbcRequest {
   period: string;
   client_owner_id: string;
   auditor_id: string;
+  created_by?: string;
   deadline: string;
   priority: Priority;
   status: RequestStatus;
@@ -119,7 +120,6 @@ export interface Settings {
   supabase_publishable_key: string;
   global_admin_email: string;
   sharepoint_host: string;
-  sharepoint_user: string;
   sharepoint_site_path: string;
   sharepoint_library: string;
   storage_provider: StorageProvider;
@@ -129,6 +129,7 @@ export interface Settings {
   onedrive_business_folder_path: string;
   digest_hour: string;
   retention_years: number;
+  mfa_enabled: boolean;
 }
 export interface State {
   firms: AuditFirm[];
@@ -191,6 +192,7 @@ export function createDemo(): State {
     period: partial.period ?? "31.12.2026",
     client_owner_id: client,
     auditor_id: auditor,
+    created_by: auditor,
     deadline: partial.deadline ?? "2027-01-15",
     priority: partial.priority ?? "normal",
     status: partial.status,
@@ -246,7 +248,7 @@ export function createDemo(): State {
       { id: "evt-2", audit_firm_id: firm, request_id: "req-3", actor_id: auditor, action: "CLARIFICATION_REQUESTED", details: "A fost solicitat extrasul pentru contul în EUR.", created_at: "2027-01-14T09:10:00Z" },
       { id: "evt-3", audit_firm_id: firm, request_id: "req-5", actor_id: client, action: "DOCUMENT_UPLOADED", details: "Aging_clienti_2026.xlsx · versiunea 1", created_at: "2027-01-15T08:15:00Z" },
     ],
-    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", storage_provider: "sharepoint", sharepoint_host: "", sharepoint_user: "", sharepoint_site_path: "", sharepoint_library: "Documente", onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7 },
+    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", storage_provider: "sharepoint", sharepoint_host: "", sharepoint_site_path: "", sharepoint_library: "Documente", onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7, mfa_enabled: true },
     current_firm_id: firm,
     current_user_id: admin,
     is_global_admin: true,

@@ -188,6 +188,8 @@ tbody tr:hover { background: #f9fcfd; }
 .engagement-card > footer button { display: flex; align-items: center; border: 0; background: transparent; color: #087fb9; font-weight: 700; }
 .engagement-actions { display: flex; align-items: center; gap: 16px; }
 .engagement-actions button { gap: 5px; }
+.user-cell { display: flex; flex-direction: column; gap: 4px; min-width: 145px; }
+.user-cell small { color: var(--muted); font-weight: 400; }
 .activity-panel { max-width: 980px; }
 .activity-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
 .activity-summary span { padding: 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); }
@@ -227,6 +229,9 @@ label small { color: var(--muted); font-weight: 400; }
 .security-grid article { display: flex; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; }
 .security-grid svg { width: 18px; color: #079dc9; }
 .security-grid p { margin: 4px 0 0; color: var(--muted); font-size: .72rem; line-height: 1.45; }
+.mfa-setting { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 18px; margin: 16px 0 22px; padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: #f7fbfd; }
+.mfa-setting strong, .mfa-setting small { display: block; }
+.mfa-setting small { margin-top: 5px; color: var(--muted); }
 .danger-zone { margin-top: 25px; padding-top: 18px; border-top: 1px solid #f0d7d4; display: flex; justify-content: space-between; gap: 15px; }
 .danger-zone small { display: block; color: var(--muted); margin-top: 4px; }
 .page-footer { display: flex; justify-content: space-between; padding: 12px 34px 20px; color: #8ca0aa; font-size: .68rem; }
@@ -336,6 +341,7 @@ label small { color: var(--muted); font-weight: 400; }
 .mfa-card > .brand-icon { margin: 0 auto 18px; }
 .mfa-card .eyebrow { margin-left: 0; }
 .mfa-card p { color: var(--muted); }
+.mfa-card .mfa-email { margin: -2px 0 18px; color: #17678e; font-weight: 700; }
 .mfa-card img { width: 210px; max-width: 100%; margin: 5px auto 14px; border: 8px solid #fff; box-shadow: 0 0 0 1px var(--line); }
 .mfa-card label { text-align: left; }
 .mfa-card input { text-align: center; font-size: 1.25rem; letter-spacing: .35em; }
@@ -390,6 +396,7 @@ label small { color: var(--muted); font-weight: 400; }
   .result-count { width: 100%; }
   .engagement-grid { grid-template-columns: 1fr; }
   .activity-summary { grid-template-columns: 1fr; }
+  .mfa-setting { grid-template-columns: 1fr; align-items: start; }
   .page-footer span:last-child { display: none; }
   .overlay { padding: 10px; }
   .modal { max-height: calc(100vh - 20px); padding: 18px; }
