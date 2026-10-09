@@ -130,6 +130,7 @@ export interface Settings {
   onedrive_business_folder_path: string;
   digest_hour: string;
   retention_years: number;
+  activity_limit: number;
   mfa_enabled: boolean;
 }
 export interface State {
@@ -168,6 +169,10 @@ export const roleLabels: Record<Role, string> = {
 };
 
 export const uid = () => crypto.randomUUID();
+export function activityLimit(value: unknown): number {
+  const limit = Number(value);
+  return Number.isInteger(limit) && limit >= 1 && limit <= 500 ? limit : 20;
+}
 export const today = () => new Date().toISOString().slice(0, 10);
 export const formatDate = (value: string) =>
   value ? new Date(value).toLocaleDateString("ro-RO") : "—";
@@ -250,7 +255,7 @@ export function createDemo(): State {
       { id: "evt-2", audit_firm_id: firm, request_id: "req-3", actor_id: auditor, action: "CLARIFICATION_REQUESTED", details: "A fost solicitat extrasul pentru contul în EUR.", created_at: "2027-01-14T09:10:00Z" },
       { id: "evt-3", audit_firm_id: firm, request_id: "req-5", actor_id: client, action: "DOCUMENT_UPLOADED", details: "Aging_clienti_2026.xlsx · versiunea 1", created_at: "2027-01-15T08:15:00Z" },
     ],
-    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", storage_provider: "sharepoint", sharepoint_host: "", sharepoint_site_path: "", sharepoint_library: "Documente", onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7, mfa_enabled: true },
+    settings: { supabase_url: "", supabase_publishable_key: "", global_admin_email: "", storage_provider: "sharepoint", sharepoint_host: "", sharepoint_site_path: "", sharepoint_library: "Documente", onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7, activity_limit: 20, mfa_enabled: true },
     current_firm_id: firm,
     current_user_id: admin,
     is_global_admin: true,

@@ -133,7 +133,7 @@ export async function loadLiveState(client: SupabaseClient, requestedFirm?: stri
   const baseSettings: Settings = {
     supabase_url: "", supabase_publishable_key: "", global_admin_email: "",
     storage_provider: "sharepoint", sharepoint_host: "", sharepoint_site_path: "", sharepoint_library: "Documente",
-    onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7, mfa_enabled: true,
+    onedrive_personal_user: "", onedrive_personal_folder_path: "", onedrive_business_user: "", onedrive_business_folder_path: "", digest_hour: "17:00", retention_years: 7, activity_limit: 20, mfa_enabled: true,
   };
   const savedSettings = (settings.data?.data ?? {}) as Record<string, unknown>;
   const legacyOneDriveType = savedSettings.onedrive_account_type === "business" ? "business" : "personal";
