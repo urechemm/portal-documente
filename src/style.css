@@ -123,6 +123,9 @@ main { padding: 29px 34px 20px; max-width: 1680px; margin: 0 auto; }
 .progress, .completion i { display: block; width: 100%; height: 5px; border-radius: 20px; overflow: hidden; background: #e0eff5; margin: 7px 0 9px; }
 .progress i, .completion i b { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--blue)); border-radius: inherit; }
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, .8fr); gap: 17px; }
+.area-summary { margin-bottom: 25px; }
+.request-row-actions { display: flex; gap: 6px; white-space: nowrap; }
+.area-summary .table-wrap { border: 0; border-radius: 0 0 12px 12px; box-shadow: none; }
 .panel { padding: 22px; }
 .panel > header, .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
 .panel > header .eyebrow { margin-left: 0; }

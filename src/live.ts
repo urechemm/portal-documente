@@ -55,6 +55,27 @@ function fail(message: string, error?: { message?: string } | null): never {
   throw new Error(error?.message ? `${message}: ${error.message}` : message);
 }
 
+function normalizeDateOnly(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  const text = String(value ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const european = text.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (european) return `${european[3]}-${european[2].padStart(2, "0")}-${european[1].padStart(2, "0")}`;
+  const parsed = new Date(text);
+  if (!Number.isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  throw new Error(`Data „${text}” nu este validă. Folosiți formatul YYYY-MM-DD sau DD.MM.YYYY.`);
+}
+
 async function edgeFunctionError(error: unknown, fallback: string): Promise<string> {
   const candidate = error as { message?: string; context?: Response } | null;
   const response = candidate?.context;
@@ -162,7 +183,19 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
   await upsert("audit_firms", changedRows(before.firms, after.firms));
   await upsert("audit_firm_users", changedRows(before.memberships, after.memberships));
   await upsert("entities", changedRows(before.entities, after.entities));
-  await upsert("engagements", changedRows(before.engagements, after.engagements));
+  const existingEngagementIds = new Set(before.engagements.map((row) => row.id));
+  const engagementChanges = changedRows(before.engagements, after.engagements);
+  const newEngagements = engagementChanges.filter((row) => !existingEngagementIds.has(row.id));
+  if (newEngagements.length) {
+    const { error } = await client.from("engagements").insert(newEngagements);
+    if (error) fail("Crearea misiunii în engagements a eșuat", error);
+  }
+  for (const row of engagementChanges.filter((item) => existingEngagementIds.has(item.id))) {
+    const { id, ...values } = row;
+    const { data, error } = await client.from("engagements").update(values).eq("id", id).select("id");
+    if (error) fail("Actualizarea misiunii în engagements a eșuat", error);
+    if (!data?.length) fail("Misiunea nu mai există sau nu aveți dreptul să o modificați.");
+  }
   const removedEngagementUsers = before.engagement_users.filter((old) =>
     old.audit_firm_id === after.current_firm_id &&
     !after.engagement_users.some((item) => item.engagement_id === old.engagement_id && item.user_id === old.user_id));
@@ -181,7 +214,7 @@ export async function persistLiveDelta(client: SupabaseClient, before: State, af
     if (!row.client_owner_id || !after.memberships.some((item) =>
       item.audit_firm_id === engagement.audit_firm_id && item.user_id === row.client_owner_id && item.active && item.role === "client"))
       throw new Error("Selectați un Client activ din firma de audit a misiunii.");
-    return { ...row, audit_firm_id: engagement.audit_firm_id, created_by: row.created_by ?? after.current_user_id };
+    return { ...row, audit_firm_id: engagement.audit_firm_id, created_by: row.created_by ?? after.current_user_id, deadline: normalizeDateOnly(row.deadline) };
   });
   const newRequests = requestChanges.filter((row) => !existingRequestIds.has(row.id));
   if (newRequests.length) {

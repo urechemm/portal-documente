@@ -52,7 +52,7 @@ export function uploadDocument(state: State, requestId: string, file: File, desc
     };
     draft.documents.unshift(document);
     const request = draft.requests.find((item) => item.id === requestId);
-    if (request && ["draft", "requested", "clarification"].includes(request.status)) request.status = "received";
+    if (request && ["draft", "requested"].includes(request.status)) request.status = "received";
     if (request) request.updated_at = document.uploaded_at;
     draft.events.unshift(event(draft, requestId, "DOCUMENT_UPLOADED", `${relativePath} · versiunea ${document.version}`));
   });

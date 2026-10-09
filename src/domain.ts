@@ -5,6 +5,7 @@ export type RequestStatus =
   | "received"
   | "review"
   | "clarification"
+  | "clarification_resolved"
   | "complete"
   | "not_applicable";
 export type Priority = "normal" | "urgent";
@@ -154,6 +155,7 @@ export const statusLabels: Record<RequestStatus, string> = {
   received: "Primit",
   review: "În revizuire",
   clarification: "Clarificare necesară",
+  clarification_resolved: "Clarificare rezolvată",
   complete: "Complet",
   not_applicable: "Nu se aplică",
 };
