@@ -98,6 +98,9 @@ main { padding: 29px 34px 20px; max-width: 1680px; margin: 0 auto; }
 .engagement-title-picker svg { position: absolute; right: 12px; width: 18px; height: 18px; color: #39728f; pointer-events: none; }
 .heading-actions, .form-actions, .modal-actions > div { display: flex; gap: 9px; align-items: center; }
 .primary, .secondary { min-height: 40px; padding: 9px 14px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: .82rem; font-weight: 650; }
+.danger-button { min-height: 40px; padding: 9px 14px; border: 1px solid #e4aaa5; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: #a63c35; background: #fff5f4; font-size: .82rem; font-weight: 700; }
+.danger-button:hover:not(:disabled) { color: #fff; background: #b94b43; border-color: #b94b43; }
+.danger-button:disabled { opacity: .48; cursor: not-allowed; }
 .primary { color: #fff; border: 1px solid #087fb9; background: linear-gradient(135deg, #0b4f96, #08a9d6); box-shadow: 0 5px 14px #087fb926; }
 .primary:hover { background: linear-gradient(135deg, #083f7c, #078dbb); transform: translateY(-1px); }
 .secondary { color: #17678e; border: 1px solid #cde2ec; background: #fff; }
@@ -194,6 +197,10 @@ tbody tr:hover { background: #f9fcfd; }
 .user-cell { display: flex; flex-direction: column; gap: 4px; min-width: 145px; }
 .user-cell small { color: var(--muted); font-weight: 400; }
 .cell-link + small { display: none; }
+.selection-cell { width: 44px; min-width: 44px; padding-left: 16px !important; padding-right: 6px !important; text-align: center; }
+.selection-cell input { appearance: auto; width: 17px; height: 17px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 3px; accent-color: #087fb9; cursor: pointer; }
+.table-wrap tbody tr.selected-row td { background: #eef9fc; }
+.request-delete-button { flex: 0 0 auto; margin: 0 8px; }
 .request-creator { color: var(--muted); font-size: .82em; font-weight: 600; }
 .activity-panel { max-width: 980px; }
 .activity-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }

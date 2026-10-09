@@ -45,6 +45,12 @@ export async function deleteLiveEngagement(client: SupabaseClient, engagementId:
   return loadLiveState(client, firmId);
 }
 
+export async function deleteLivePbcRequests(client: SupabaseClient, requestIds: string[], firmId: string): Promise<State> {
+  const { error } = await client.rpc("delete_pbc_requests", { p_requests: requestIds });
+  if (error) fail("Ștergerea cerințelor a eșuat", error);
+  return loadLiveState(client, firmId);
+}
+
 function fail(message: string, error?: { message?: string } | null): never {
   throw new Error(error?.message ? `${message}: ${error.message}` : message);
 }

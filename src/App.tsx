@@ -49,17 +49,19 @@ interface AppProps {
   saveStorageCredential?: (auditFirmId: string, provider: StorageProvider, credentials: Record<string, string>) => Promise<void>;
   configureMfa?: (enabled: boolean) => Promise<void>;
   deleteLiveEngagement?: (engagementId: string, firmId: string) => Promise<State>;
+  deleteLiveRequests?: (requestIds: string[], firmId: string) => Promise<State>;
   inviteLive?: (auditFirmId: string, name: string, email: string, role: Role) => Promise<boolean>;
   logout?: () => Promise<unknown>;
 }
 
-export default function App({ initialState, live = false, persist, reload, uploadLive, openStorageLink, testStorage, saveStorageCredential, configureMfa, deleteLiveEngagement, inviteLive, logout }: AppProps = {}) {
+export default function App({ initialState, live = false, persist, reload, uploadLive, openStorageLink, testStorage, saveStorageCredential, configureMfa, deleteLiveEngagement, deleteLiveRequests, inviteLive, logout }: AppProps = {}) {
   const [state, setState] = useState<State>(() => initialState ?? readState());
   const [page, setPage] = useState<Page>("dashboard");
   const [modal, setModal] = useState<ModalName>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedEngagementId, setSelectedEngagementId] = useState<string | null>(() => sessionStorage.getItem("portal-selected-engagement"));
   const [editingEngagementId, setEditingEngagementId] = useState<string | null>(null);
+  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(() => new Set());
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
@@ -80,6 +82,7 @@ export default function App({ initialState, live = false, persist, reload, uploa
   const auditUser = role !== "client";
   const manager = ["admin", "manager", "auditor"].includes(role);
   const canDeleteEngagement = role !== "client";
+  const canDeleteRequests = ["admin", "manager"].includes(role);
   const activeEngagements = state.engagements.filter((item) => item.audit_firm_id === state.current_firm_id);
   const currentEngagement = activeEngagements.find((item) => item.id === selectedEngagementId) ?? activeEngagements[0];
   const tenantRequests = state.requests.filter((item) => item.engagement_id === currentEngagement?.id && (role !== "client" || item.client_owner_id === state.current_user_id));
@@ -115,6 +118,7 @@ export default function App({ initialState, live = false, persist, reload, uploa
     setSearch("");
     setStatusFilter("all");
     setAreaFilter("all");
+    setSelectedRequestIds(new Set());
     setPage("requests");
   }
   function docsFor(requestId: string) { return documents.filter((item) => item.request_id === requestId); }
@@ -188,6 +192,25 @@ export default function App({ initialState, live = false, persist, reload, uploa
       notify("Misiunea a fost ștearsă.");
     } catch (reason) { setError((reason as Error).message); }
   }
+  async function removeSelectedRequests() {
+    const ids = [...selectedRequestIds].filter((id) => tenantRequests.some((request) => request.id === id));
+    if (!ids.length) return;
+    if (!window.confirm(`Ștergi definitiv ${ids.length} ${ids.length === 1 ? "cerință" : "cerințe"} și toate dependențele acestora din Supabase?`)) return;
+    setError("");
+    try {
+      if (live && deleteLiveRequests) setState(await deleteLiveRequests(ids, state.current_firm_id));
+      else {
+        const requestIds = new Set(ids);
+        setState(mutateState(state, (draft) => {
+          draft.documents = draft.documents.filter((item) => !requestIds.has(item.request_id));
+          draft.comments = draft.comments.filter((item) => !requestIds.has(item.request_id));
+          draft.requests = draft.requests.filter((item) => !requestIds.has(item.id));
+        }));
+      }
+      setSelectedRequestIds(new Set());
+      notify(`${ids.length} ${ids.length === 1 ? "cerință a fost ștearsă" : "cerințe au fost șterse"}.`);
+    } catch (reason) { setError((reason as Error).message); }
+  }
 
   const navItems: { page: Page; label: string; icon: typeof LayoutDashboard; count?: number; admin?: boolean }[] = [
     { page: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -224,8 +247,8 @@ export default function App({ initialState, live = false, persist, reload, uploa
         {page === "requests" && <>
           <div className="page-heading"><div><div className="eyebrow">CERINȚA ESTE OBIECTUL CENTRAL</div><h1 className="requests-title"><span>Liste cerințe</span>{currentEngagement && <span className="engagement-title-picker"><select aria-label="Alege misiunea" value={currentEngagement.id} onChange={(event) => selectEngagement(event.target.value)}>{activeEngagements.map((engagement) => <option key={engagement.id} value={engagement.id}>{engagement.name}</option>)}</select><ChevronDown aria-hidden="true"/></span>}</h1><p>Documente, descrieri, conversații și istoric — toate legate de misiunea de audit selectată.</p></div>{canCreateRequest && <div className="heading-actions"><button className="secondary" onClick={() => setModal("import")}><Upload size={17}/>Importă</button><button className="primary" onClick={() => setModal("request")}><Plus size={17}/>Cerință nouă</button></div>}</div>
           {!currentEngagement && <div className="notice"><CircleAlert/>Creează mai întâi o misiune de audit, apoi vei putea adăuga lista de cerințe.</div>}
-          <section className="toolbar"><label className="search"><Search/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Caută după cod, cerință sau arie…" /></label><label><Filter size={15}/><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">Toate statusurile</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option value="all">Toate ariile</option>{areas.map((area) => <option key={area}>{area}</option>)}</select></label><span className="result-count">{displayed.length} rezultate</span></section>
-          <RequestTable requests={displayed} docsFor={docsFor} sort={sort} sortBy={sortBy} openRequest={openRequest} client={!auditUser} profileInfo={profileInfo} />
+          <section className="toolbar"><label className="search"><Search/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Caută după cod, cerință sau arie…" /></label>{canDeleteRequests && <button className="danger-button request-delete-button" disabled={!selectedRequestIds.size} onClick={() => void removeSelectedRequests()}><Trash2 size={16}/>Șterge{selectedRequestIds.size ? ` (${selectedRequestIds.size})` : ""}</button>}<label><Filter size={15}/><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">Toate statusurile</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}><option value="all">Toate ariile</option>{areas.map((area) => <option key={area}>{area}</option>)}</select></label><span className="result-count">{displayed.length} rezultate</span></section>
+          <RequestTable requests={displayed} docsFor={docsFor} sort={sort} sortBy={sortBy} openRequest={openRequest} client={!auditUser} profileInfo={profileInfo} selectable={canDeleteRequests} selectedIds={selectedRequestIds} toggleSelected={(id) => setSelectedRequestIds((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; })} toggleAll={() => setSelectedRequestIds((current) => { const displayedIds = displayed.map((request) => request.id); const allSelected = displayedIds.length > 0 && displayedIds.every((id) => current.has(id)); const next = new Set(current); displayedIds.forEach((id) => allSelected ? next.delete(id) : next.add(id)); return next; })} />
         </>}
 
         {page === "engagements" && <>
@@ -290,8 +313,9 @@ function Stat({ label, value, icon, caption, progress, alert }: { label: string;
   return <article className={`stat ${alert ? "alert" : ""}`}><span>{label}{icon}</span><strong>{value}</strong>{progress !== undefined && <div className="progress"><i style={{ width: `${progress}%` }}/></div>}<footer>{caption}</footer></article>;
 }
 
-function RequestTable({ requests, docsFor, sort, sortBy, openRequest, client, profileInfo }: { requests: PbcRequest[]; docsFor: (id: string) => State["documents"]; sort: { key: SortKey; direction: "asc" | "desc" }; sortBy: (key: SortKey) => void; openRequest: (id: string, modal?: ModalName) => void; client: boolean; profileInfo: (id?: string) => { name: string; email: string } }) {
-  return <div className="table-wrap"><table><thead><tr><th><SortButton label="Cod" name="code" active={sort.key === "code"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Cerință auditor" name="title" active={sort.key === "title"} direction={sort.direction} onSort={sortBy}/></th><th>Creat de</th><th>Asignat către</th><th><SortButton label="Arie" name="area" active={sort.key === "area"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Termen" name="deadline" active={sort.key === "deadline"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Status" name="status" active={sort.key === "status"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Documente" name="documents" active={sort.key === "documents"} direction={sort.direction} onSort={sortBy}/></th><th>Acțiune</th></tr></thead><tbody>{requests.map((request) => { const count = docsFor(request.id).length; const upload = client && ["draft", "requested"].includes(request.status); const creator = profileInfo(request.created_by || request.auditor_id); const assignee = profileInfo(request.client_owner_id); return <tr key={request.id}><td><span className="code">{request.code}</span>{request.priority === "urgent" && <small className="urgent">Urgent</small>}</td><td><button className="cell-link" onClick={() => openRequest(request.id)}>{request.title}</button><small>{request.description}</small></td><td><span className="user-cell"><strong>{creator.name}</strong><small>{creator.email}</small></span></td><td><span className="user-cell"><strong>{assignee.name}</strong><small>{assignee.email}</small></span></td><td>{request.area}</td><td className={request.deadline < today() && !["complete", "not_applicable"].includes(request.status) ? "overdue" : ""}>{formatDate(request.deadline)}</td><td><StatusBadge status={request.status}/></td><td><span className="document-count"><FileText/>{count || "—"}</span></td><td><button className={upload ? "primary small-button" : "secondary small-button"} onClick={() => openRequest(request.id, upload ? "upload" : "detail")}>{upload ? "Încarcă" : request.status === "clarification" && client ? "Răspunde" : "Vezi"}</button></td></tr>; })}</tbody></table>{!requests.length && <Empty title="Nicio cerință găsită" text="Modifică filtrele sau adaugă o cerință nouă."/>}</div>;
+function RequestTable({ requests, docsFor, sort, sortBy, openRequest, client, profileInfo, selectable, selectedIds, toggleSelected, toggleAll }: { requests: PbcRequest[]; docsFor: (id: string) => State["documents"]; sort: { key: SortKey; direction: "asc" | "desc" }; sortBy: (key: SortKey) => void; openRequest: (id: string, modal?: ModalName) => void; client: boolean; profileInfo: (id?: string) => { name: string; email: string }; selectable: boolean; selectedIds: Set<string>; toggleSelected: (id: string) => void; toggleAll: () => void }) {
+  const allSelected = requests.length > 0 && requests.every((request) => selectedIds.has(request.id));
+  return <div className="table-wrap"><table><thead><tr>{selectable && <th className="selection-cell"><input type="checkbox" aria-label="Selectează toate cerințele afișate" checked={allSelected} onChange={toggleAll}/></th>}<th><SortButton label="Cod" name="code" active={sort.key === "code"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Cerință auditor" name="title" active={sort.key === "title"} direction={sort.direction} onSort={sortBy}/></th><th>Creat de</th><th>Asignat către</th><th><SortButton label="Arie" name="area" active={sort.key === "area"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Termen" name="deadline" active={sort.key === "deadline"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Status" name="status" active={sort.key === "status"} direction={sort.direction} onSort={sortBy}/></th><th><SortButton label="Documente" name="documents" active={sort.key === "documents"} direction={sort.direction} onSort={sortBy}/></th><th>Acțiune</th></tr></thead><tbody>{requests.map((request) => { const count = docsFor(request.id).length; const upload = client && ["draft", "requested"].includes(request.status); const creator = profileInfo(request.created_by || request.auditor_id); const assignee = profileInfo(request.client_owner_id); return <tr key={request.id} className={selectedIds.has(request.id) ? "selected-row" : ""}>{selectable && <td className="selection-cell"><input type="checkbox" aria-label={`Selectează cerința ${request.code}`} checked={selectedIds.has(request.id)} onChange={() => toggleSelected(request.id)}/></td>}<td><span className="code">{request.code}</span>{request.priority === "urgent" && <small className="urgent">Urgent</small>}</td><td><button className="cell-link" onClick={() => openRequest(request.id)}>{request.title}</button></td><td><span className="user-cell"><strong>{creator.name}</strong><small>{creator.email}</small></span></td><td><span className="user-cell"><strong>{assignee.name}</strong><small>{assignee.email}</small></span></td><td>{request.area}</td><td className={request.deadline < today() && !["complete", "not_applicable"].includes(request.status) ? "overdue" : ""}>{formatDate(request.deadline)}</td><td><StatusBadge status={request.status}/></td><td><span className="document-count"><FileText/>{count || "—"}</span></td><td><button className={upload ? "primary small-button" : "secondary small-button"} onClick={() => openRequest(request.id, upload ? "upload" : "detail")}>{upload ? "Încarcă" : request.status === "clarification" && client ? "Răspunde" : "Vezi"}</button></td></tr>; })}</tbody></table>{!requests.length && <Empty title="Nicio cerință găsită" text="Modifică filtrele sau adaugă o cerință nouă."/>}</div>;
 }
 
 function RequestDetail({ request, documents, comments, profileName, auditUser, openFolder, openDocument, close, upload, notApplicable, updateStatus, addMessage }: { request: PbcRequest; documents: State["documents"]; comments: State["comments"]; profileName: (id: string) => string; auditUser: boolean; openFolder?: () => void; openDocument?: (documentId: string) => void; close: () => void; upload: () => void; notApplicable: () => void; updateStatus: (status: RequestStatus) => void; addMessage: (body: string) => void }) {
