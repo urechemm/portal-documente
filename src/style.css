@@ -80,6 +80,7 @@ svg { flex: 0 0 auto; }
 .user-switch div strong, .user-switch div small { display: block; }
 .user-switch div strong { font-size: .77rem; }
 .user-switch div small { color: var(--muted); font-size: .67rem; margin-top: 3px; }
+.user-switch div .user-role { color: #17678e; font-weight: 700; }
 .user-switch select { width: 25px; border: 0; color: transparent; background: transparent; padding: 0; }
 .logout-button { width: 31px; height: 31px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 7px; color: #6d8190; background: transparent; }
 .logout-button:hover { color: #a84a44; background: #fff0ee; }
@@ -188,8 +189,12 @@ tbody tr:hover { background: #f9fcfd; }
 .engagement-card > footer button { display: flex; align-items: center; border: 0; background: transparent; color: #087fb9; font-weight: 700; }
 .engagement-actions { display: flex; align-items: center; gap: 16px; }
 .engagement-actions button { gap: 5px; }
+.engagement-actions .danger-link { color: #b24740; }
+.engagement-actions .danger-link:hover { color: #8f302a; }
 .user-cell { display: flex; flex-direction: column; gap: 4px; min-width: 145px; }
 .user-cell small { color: var(--muted); font-weight: 400; }
+.cell-link + small { display: none; }
+.request-creator { color: var(--muted); font-size: .82em; font-weight: 600; }
 .activity-panel { max-width: 980px; }
 .activity-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
 .activity-summary span { padding: 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); }

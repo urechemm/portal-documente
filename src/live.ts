@@ -39,6 +39,12 @@ export async function setLiveMfaEnabled(client: SupabaseClient, enabled: boolean
   if (error) fail("Setarea MFA nu a putut fi salvată", error);
 }
 
+export async function deleteLiveEngagement(client: SupabaseClient, engagementId: string, firmId: string): Promise<State> {
+  const { error } = await client.rpc("delete_engagement", { p_engagement: engagementId });
+  if (error) fail("Ștergerea misiunii a eșuat", error);
+  return loadLiveState(client, firmId);
+}
+
 function fail(message: string, error?: { message?: string } | null): never {
   throw new Error(error?.message ? `${message}: ${error.message}` : message);
 }
