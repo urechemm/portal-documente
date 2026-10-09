@@ -124,6 +124,7 @@ main { padding: 29px 34px 20px; max-width: 1680px; margin: 0 auto; }
 .progress i, .completion i b { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--blue)); border-radius: inherit; }
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, .8fr); gap: 17px; }
 .area-summary { margin-bottom: 25px; }
+#dashboard-attention { scroll-margin-top: 90px; }
 .request-row-actions { display: flex; gap: 6px; white-space: nowrap; }
 .area-summary .table-wrap { border: 0; border-radius: 0 0 12px 12px; box-shadow: none; }
 .panel { padding: 22px; }
