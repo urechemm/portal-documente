@@ -329,13 +329,37 @@ function Dashboard({ role, engagement, entityName, requests, documents, actionRe
   return <>
     <div className="page-heading dashboard-title"><div><div className="eyebrow">{client ? "SPAȚIUL DUMNEAVOASTRĂ DE AUDIT" : "VEDERE ECHIPĂ AUDIT"}</div><h1>{engagement?.name ?? "Portal Documente"}</h1><p>{entityName} · {engagement?.period ?? "Perioadă neconfigurată"}</p></div><div className="deadline-card"><Clock3/><span><small>Termen general</small><strong>{formatDate(engagement?.deadline ?? "")}</strong></span></div></div>
     <div className="stats"><Stat label="Cerințe totale" value={requests.length} icon={<Files/>} caption="Lista curentă PBC"/><Stat label="Completate" value={complete} icon={<CheckCircle2/>} caption={`${requests.length ? Math.round(complete / requests.length * 100) : 0}% din total`} progress={requests.length ? complete / requests.length * 100 : 0}/><Stat label="În revizuire" value={review} icon={<FileCheck2/>} caption="Documente primite"/><Stat label="Clarificări" value={clarification} icon={<MessageSquareText/>} caption="Necesită răspuns" alert={clarification > 0}/><Stat label="De transmis" value={missing} icon={<Upload/>} caption="Fără document complet"/></div>
-    <section className="panel area-summary"><header><h2>Cerințe pe arii de audit</h2></header><div className="table-wrap"><table><thead><tr><th>Arie audit</th><th>Cerințe totale</th><th>Completate</th><th>În revizuire</th><th>Clarificări</th><th>De transmis</th></tr></thead><tbody>{[...new Set(requests.map((request) => request.area))].sort((a, b) => a.localeCompare(b, "ro")).map((area) => {
-      const rows = requests.filter((request) => request.area === area);
-      return <tr key={area}><td><strong>{area || "Fără arie"}</strong></td><td>{rows.length}</td><td>{rows.filter((row) => ["complete", "not_applicable"].includes(row.status)).length}</td><td>{rows.filter((row) => ["received", "review", "clarification_resolved"].includes(row.status)).length}</td><td>{rows.filter((row) => row.status === "clarification").length}</td><td>{rows.filter((row) => ["draft", "requested"].includes(row.status)).length}</td></tr>;
-    })}</tbody></table>{!requests.length && <Empty title="Nicio cerință" text="Centralizarea pe arii apare după adăugarea cerințelor."/>}</div></section>
+    <AreaRequestsChart requests={requests}/>
     <div className="dashboard-grid"><section id="dashboard-attention" className="panel attention"><header><div><div className="eyebrow">PRIORITAR</div><h2>{client ? "Acțiuni necesare din partea dvs." : "Elemente care necesită atenție"}</h2></div><span className="count">{actionRequests.length}</span></header><div className="action-list">{actionRequests.slice(0, 6).map((request) => <button key={request.id} onClick={() => openRequest(request.id)}><span className={`attention-icon ${statusTone[request.status]}`}>{request.status === "clarification" ? <MessageSquareText/> : request.status === "requested" ? <Upload/> : <FileCheck2/>}</span><span><strong>{request.code} · {request.title}</strong><small>{request.area} · termen {formatDate(request.deadline)}</small></span><StatusBadge status={request.status}/><ChevronRight/></button>)}{!actionRequests.length && <Empty title="Totul este la zi" text="Nu există acțiuni restante pentru rolul curent."/>}</div></section>
       <section className="panel digest"><header><div><div className="eyebrow">ACTIVITATE ASTĂZI</div><h2>Digest {entityName}</h2></div><Bell/></header><div className="digest-number"><strong>{documents.filter((item) => item.uploaded_at.slice(0, 10) >= "2027-01-15").length}</strong><span>documente noi</span></div><div className="digest-row"><span>Răspunsuri la clarificări</span><strong>1</strong></div><div className="digest-row"><span>Marcaje „Nu se aplică”</span><strong>{requests.filter((item) => item.status === "not_applicable").length}</strong></div><p>Emailul digest consolidează activitatea; doar comentariile urgente generează notificări punctuale.</p></section></div>
   </>;
+}
+
+function AreaRequestsChart({ requests }: { requests: PbcRequest[] }) {
+  const counts = new Map<string, { total: number; complete: number }>();
+  for (const request of requests) {
+    const area = request.area.trim() || "Fără arie";
+    const count = counts.get(area) ?? { total: 0, complete: 0 };
+    count.total++;
+    if (["complete", "not_applicable"].includes(request.status)) count.complete++;
+    counts.set(area, count);
+  }
+  const areas = [...counts.entries()].sort(([a], [b]) => a.localeCompare(b, "ro"));
+  const maximum = Math.max(1, ...areas.map(([, count]) => count.total));
+  const rawStep = Math.max(1, maximum / 5);
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const step = ([1, 2, 5, 10].find((value) => value * magnitude >= rawStep) ?? 10) * magnitude;
+  const axisMaximum = Math.ceil(maximum / step) * step;
+  const ticks = Array.from({ length: axisMaximum / step + 1 }, (_, index) => index * step);
+  return <section className="panel area-summary"><header><h2>Cerințe pe arii de audit</h2><div className="area-chart-legend"><span><i className="total"/>Cerințe totale</span><span><i className="complete"/>Completate</span></div></header>
+    {areas.length ? <div className="area-chart" role="img" aria-label={`Cerințe pe arii de audit. ${areas.map(([area, count]) => `${area}: ${count.total} totale, ${count.complete} completate`).join(". ")}`}>
+      {areas.map(([area, count]) => <div className="area-chart-row" key={area}><strong className="area-chart-label">{area}</strong><div className="area-chart-bars" style={{ backgroundSize: `${step / axisMaximum * 100}% 100%` }}>
+        <div className={`area-chart-bar total ${count.total ? "" : "zero"}`} style={{ width: `${count.total / axisMaximum * 100}%` }}><span>{count.total}</span></div>
+        <div className={`area-chart-bar complete ${count.complete ? "" : "zero"}`} style={{ width: `${count.complete / axisMaximum * 100}%` }}><span>{count.complete}</span></div>
+      </div></div>)}
+      <div className="area-chart-axis"><span>Nr. cerințe</span><div>{ticks.map((tick) => <span key={tick} style={{ left: `${tick / axisMaximum * 100}%` }}>{tick}</span>)}</div></div>
+    </div> : <Empty title="Nicio cerință" text="Graficul pe arii apare după adăugarea cerințelor."/>}
+  </section>;
 }
 
 function Stat({ label, value, icon, caption, progress, alert }: { label: string; value: number; icon: ReactNode; caption: string; progress?: number; alert?: boolean }) {

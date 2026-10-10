@@ -126,7 +126,24 @@ main { padding: 29px 34px 20px; max-width: 1680px; margin: 0 auto; }
 .area-summary { margin-bottom: 25px; }
 #dashboard-attention { scroll-margin-top: 90px; }
 .request-row-actions { display: flex; gap: 6px; white-space: nowrap; }
-.area-summary .table-wrap { border: 0; border-radius: 0 0 12px 12px; box-shadow: none; }
+.area-summary > header { align-items: center; flex-wrap: wrap; }
+.area-chart-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: .75rem; color: var(--muted); }
+.area-chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.area-chart-legend i { width: 20px; height: 12px; border: 1px solid; }
+.area-chart-legend .total, .area-chart-bar.total { background: #a9c7e8; border-color: #3569a3; }
+.area-chart-legend .complete, .area-chart-bar.complete { background: #bddbab; border-color: #3f7b35; }
+.area-chart { margin-top: 20px; padding-right: 38px; }
+.area-chart-row, .area-chart-axis { display: grid; grid-template-columns: clamp(90px, 20%, 230px) minmax(0, 1fr); gap: 16px; }
+.area-chart-row { align-items: center; margin-bottom: 18px; }
+.area-chart-label { font-size: .78rem; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.area-chart-bars { display: grid; gap: 5px; padding: 5px 0; border-left: 1px solid #7f95a4; background-image: linear-gradient(to right, transparent calc(100% - 1px), #dce5eb 0); }
+.area-chart-bar { position: relative; height: 23px; border: 1px solid; }
+.area-chart-bar span { position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); color: var(--ink); font-size: .75rem; font-weight: 600; }
+.area-chart-bar.zero { border: 0; background: transparent; }
+.area-chart-axis { font-size: .7rem; color: var(--muted); }
+.area-chart-axis > span { text-align: right; }
+.area-chart-axis > div { position: relative; height: 24px; border-top: 1px solid #7f95a4; }
+.area-chart-axis > div span { position: absolute; top: 5px; transform: translateX(-50%); }
 .panel { padding: 22px; }
 .panel > header, .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
 .panel > header .eyebrow { margin-left: 0; }
